@@ -21,11 +21,12 @@ def hash_password(password: str) -> str:
 
 
 def verify_password(plain_password: str, password_hash: str) -> bool:
-    """校验明文密码；损坏的哈希或超长输入视为不匹配。"""
+    """校验明文密码；超长输入、损坏的哈希视为不匹配。"""
     try:
-        return bcrypt.checkpw(
-            plain_password.encode("utf-8"), password_hash.encode("utf-8")
-        )
+        password_bytes = plain_password.encode("utf-8")
+        if len(password_bytes) > BCRYPT_MAX_BYTES:
+            return False
+        return bcrypt.checkpw(password_bytes, password_hash.encode("utf-8"))
     except ValueError:
         return False
 
