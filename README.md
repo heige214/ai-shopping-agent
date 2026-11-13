@@ -1,10 +1,10 @@
 # AI 购物导购 Agent 平台
 
-本科毕业设计项目：移动端优先的 AI 购物导购平台，包含对话式找货、商品客服、转人工与知识回灌闭环。
+本科毕业设计项目：移动端优先的 AI 购物导购平台，规划包含对话式找货、商品客服、转人工与知识回灌闭环。
 
-- 设计文档：`docs/superpowers/specs/2026-11-11-ai-shopping-agent-design.md`
-- 实施交接：`docs/implementation-handoff.md`
-- 项目进度：`docs/progress.md`
+- 设计文档：[docs/superpowers/specs/2026-11-11-ai-shopping-agent-design.md](docs/superpowers/specs/2026-11-11-ai-shopping-agent-design.md)
+- 实施交接：[docs/implementation-handoff.md](docs/implementation-handoff.md)
+- 项目进度：[docs/progress.md](docs/progress.md)
 
 ## 当前进度
 
@@ -18,6 +18,8 @@ M0 项目骨架：登录 / 注册、双 Tab 空壳、PostgreSQL + Alembic、pyte
 - Git
 
 ## 本地启动
+
+以下命令默认在仓库根目录执行；启动后端和前端时请各开一个终端。
 
 ### 1. 启动数据库
 
@@ -57,7 +59,7 @@ uvicorn app.main:app --reload --port 8100
 
 健康检查：<http://localhost:8100/api/health>
 
-说明：本机 Windows 保留了 7997–8096 端口段，后端无法绑定 8000，因此本地开发使用 **8100**；前端 Vite 的 `/api` 代理已指向该端口。若在其他机器上 8000 可用，可自行调整启动命令与 `frontend/vite.config.ts`。
+说明：本机 Windows 保留了 7997–8096 端口段，因此本地开发使用 **8100**；前端 Vite 的 `/api` 代理已指向该端口。如需改用其他端口，请同步调整 `uvicorn` 启动端口与 `frontend/vite.config.ts` 的代理目标。
 
 ### 3. 启动前端
 
@@ -87,7 +89,7 @@ npx playwright install chromium   # 首次
 npm run test:e2e
 ```
 
-E2E 会自行启动 Vite（需要 5173 端口空闲），测试完成后自动关闭。后端需保持运行。
+E2E 会自行启动 Vite（需要 5173 端口空闲），测试完成后自动关闭。后端需保持运行。运行 E2E 前请先停止前端 dev server，确保 5173 端口空闲。
 
 ## 目录结构
 
