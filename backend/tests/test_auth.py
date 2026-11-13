@@ -125,3 +125,55 @@ def test_register_stores_bcrypt_hash(client):
 def test_register_username_is_case_sensitive(client):
     assert register(client, username="alice").status_code == 201
     assert register(client, username="Alice").status_code == 201
+
+
+def login(client, username: str = "alice", password: str = "secret123"):
+    return client.post(
+        "/api/auth/login", json={"username": username, "password": password}
+    )
+
+
+def test_login_returns_token_and_user(client):
+    register(client)
+    response = login(client)
+    assert response.status_code == 200
+    body = response.json()
+    assert body["token_type"] == "bearer"
+    assert body["access_token"]
+    assert body["user"]["username"] == "alice"
+
+
+def test_login_with_wrong_password_returns_401(client):
+    register(client)
+    response = login(client, password="wrong-password")
+    assert response.status_code == 401
+    assert response.json()["detail"] == "用户名或密码错误"
+
+
+def test_login_with_unknown_user_returns_same_message(client):
+    response = login(client, username="nobody", password="wrong-password")
+    assert response.status_code == 401
+    assert response.json()["detail"] == "用户名或密码错误"
+
+
+def test_me_requires_token(client):
+    response = client.get("/api/auth/me")
+    assert response.status_code == 401
+    assert response.json()["detail"] == "未登录或登录已过期"
+
+
+def test_me_returns_current_user(client):
+    register(client)
+    token = login(client).json()["access_token"]
+    response = client.get(
+        "/api/auth/me", headers={"Authorization": f"Bearer {token}"}
+    )
+    assert response.status_code == 200
+    assert response.json()["username"] == "alice"
+
+
+def test_me_with_invalid_token_returns_401(client):
+    response = client.get(
+        "/api/auth/me", headers={"Authorization": "Bearer invalid-token"}
+    )
+    assert response.status_code == 401

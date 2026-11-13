@@ -41,6 +41,19 @@ class RegisterRequest(BaseModel):
         return value
 
 
+class LoginRequest(BaseModel):
+    """登录请求：用户名 + 密码。"""
+
+    username: str = Field(min_length=1, max_length=50)
+    password: str = Field(min_length=1, max_length=128)
+
+    @field_validator("username", mode="before")
+    @classmethod
+    def strip_username(cls, value: object) -> object:
+        """去掉用户名首尾空白；密码保持原样。"""
+        return value.strip() if isinstance(value, str) else value
+
+
 class UserOut(BaseModel):
     """对外返回的用户信息，不包含密码哈希。"""
 
@@ -55,3 +68,12 @@ class UserOut(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class TokenResponse(BaseModel):
+    """登录成功后返回的令牌信息。"""
+
+    access_token: str
+    token_type: str = "bearer"
+    expires_in: int
+    user: UserOut
