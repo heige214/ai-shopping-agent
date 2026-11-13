@@ -1,0 +1,42 @@
+:root {
+  --color-primary: #ff5a1f;
+  --color-primary-gradient: linear-gradient(135deg, #ff8a3d, #ff4d2e);
+  --color-bg: #f6f7f9;
+  --color-card: #ffffff;
+  --color-text: #22262a;
+  --color-text-secondary: #9aa0a6;
+  --color-price: #ff4d2e;
+  --radius-card: 14px;
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --van-primary-color: #ff5a1f;
+  --van-tabbar-height: 56px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Microsoft YaHei", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input {
+  font-family: inherit;
+}
+
+.page {
+  min-height: 100vh;
+  background: var(--color-bg);
+}
