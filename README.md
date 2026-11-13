@@ -15,11 +15,11 @@ M0 项目骨架：登录 / 注册、双 Tab 空壳、PostgreSQL + Alembic、pyte
 - Python 3.12
 - Node.js 20+
 - Docker Desktop
-- Git
+- Git（Windows 下使用 Git Bash）
 
 ## 本地启动
 
-以下命令默认在仓库根目录执行；启动后端和前端时请各开一个终端。
+以下命令在 Windows Git Bash 中执行，并默认从仓库根目录开始；启动后端和前端时请各开一个终端。macOS/Linux 请将 `.venv/Scripts/activate` 换成 `.venv/bin/activate`。
 
 ### 1. 启动数据库
 
@@ -37,19 +37,23 @@ cd backend
 python -m venv .venv
 source .venv/Scripts/activate
 pip install -r requirements-dev.txt
-cp .env.example .env
+cp -n .env.example .env
 python - <<'PY'
+import re
 import secrets
 from pathlib import Path
 
 path = Path(".env")
 text = path.read_text(encoding="utf-8")
-text = text.replace(
-    "JWT_SECRET_KEY=\n",
-    f"JWT_SECRET_KEY={secrets.token_urlsafe(48)}\n",
-    1,
+new_text, count = re.subn(
+    r"(?m)^JWT_SECRET_KEY=\s*$",
+    f"JWT_SECRET_KEY={secrets.token_urlsafe(48)}",
+    text,
+    count=1,
 )
-path.write_text(text, encoding="utf-8")
+if count == 0:
+    raise SystemExit("JWT_SECRET_KEY 已配置或格式不符，未修改 .env")
+path.write_text(new_text, encoding="utf-8")
 print("JWT_SECRET_KEY 已写入 .env")
 PY
 python -m alembic upgrade head
@@ -59,7 +63,7 @@ uvicorn app.main:app --reload --port 8100
 
 健康检查：<http://localhost:8100/api/health>
 
-说明：本机 Windows 保留了 7997–8096 端口段，因此本地开发使用 **8100**；前端 Vite 的 `/api` 代理已指向该端口。如需改用其他端口，请同步调整 `uvicorn` 启动端口与 `frontend/vite.config.ts` 的代理目标。
+说明：本项目本地开发统一使用 **8100**（本机 Windows 保留了 7997–8096 端口段，8000 不可用），前端 Vite 的 `/api` 代理已指向该端口。如需改用其他端口，请同步调整 `uvicorn` 启动端口与 `frontend/vite.config.ts` 的代理目标；若修改前端端口，还需同步 `backend/.env` 的 `CORS_ORIGINS` 与 `frontend/playwright.config.ts` 的 `baseURL`。
 
 ### 3. 启动前端
 
@@ -72,6 +76,8 @@ npm run dev
 打开 <http://localhost:5173>，使用演示账号 **demo / demo123** 登录。登录后进入「AI 找货」Tab，可在底部切换到「我的」。
 
 ## 测试
+
+以下测试命令请新开终端，并从仓库根目录开始执行。
 
 后端（需要 PostgreSQL 测试库已启动，本项目使用 Docker 的 `shop_test`）：
 
@@ -89,33 +95,48 @@ npx playwright install chromium   # 首次
 npm run test:e2e
 ```
 
-E2E 会自行启动 Vite（需要 5173 端口空闲），测试完成后自动关闭。后端需保持运行。运行 E2E 前请先停止前端 dev server，确保 5173 端口空闲。
+E2E 会自行启动 Vite，请先停止前端 dev server 并确保 5173 端口空闲；测试完成后 Vite 自动关闭。后端需保持运行。
 
-## 目录结构
+## 停止与重置
+
+- 停止后端 / 前端：在对应终端按 `Ctrl+C`。
+- 停止数据库：`cd deploy && docker compose -f docker-compose.dev.yml down`。
+- 重置演示数据：`cd deploy && docker compose -f docker-compose.dev.yml down -v`（会删除本地开发数据），再重新启动数据库、执行 `python -m alembic upgrade head` 与 `python -m scripts.seed_demo_user`。
+
+## 主要目录
 
 ```text
-backend/app/
-├── core/          # 配置、安全
-├── db/            # engine、Base、session
-├── modules/auth/  # 用户、注册、登录
-├── main.py
-└── models.py
+backend/
+├── app/
+│   ├── core/          # 配置、安全
+│   ├── db/            # engine、Base、session
+│   ├── modules/auth/  # 用户、注册、登录
+│   ├── main.py
+│   └── models.py
+├── alembic/           # 数据库迁移
+├── scripts/           # 种子脚本
+└── tests/             # pytest
 
-frontend/src/
-├── api/           # Axios 客户端与接口封装
-├── layouts/       # 双 Tab 布局
-├── router/        # 路由与鉴权守卫
-├── stores/        # Pinia 状态
-├── styles/        # 设计变量与全局样式
-├── types/         # TypeScript 类型
-├── utils/         # token、错误提示
-└── views/user/    # 登录、注册、AI 找货、我的
+frontend/
+├── src/
+│   ├── api/           # Axios 客户端与接口封装
+│   ├── layouts/       # 双 Tab 布局
+│   ├── router/        # 路由与鉴权守卫
+│   ├── stores/        # Pinia 状态
+│   ├── styles/        # 设计变量与全局样式
+│   ├── types/         # TypeScript 类型
+│   ├── utils/         # token、错误提示
+│   └── views/user/    # 登录、注册、AI 找货、我的
+├── tests/e2e/         # Playwright 端到端测试
+├── playwright.config.ts
+└── vite.config.ts
 
-frontend/tests/e2e/  # Playwright 端到端测试
-deploy/              # 开发数据库 Docker Compose
+deploy/                # 开发数据库 Docker Compose
 ```
 
 ## 说明
 
-- `backend/static/products/` 约 342MB，已在 `.gitignore` 中排除，需单独备份。
-- 当前登录态为 7 天 JWT，存 localStorage；refresh token 留到后续安全增强。
+- `backend/static/products/` 约 342MB，已在 `.gitignore` 中排除，需单独备份；M0 运行不依赖商品图，后续商品模块再使用。
+- 演示账号 `demo / demo123` 仅用于本地演示，生产环境必须更换密码。
+- 当前登录态为 7 天 JWT，存 localStorage（仅为简化实现，生产应改用 HttpOnly Cookie）；refresh token 留到后续安全增强。
+- 启动命令、端口、演示账号或 `.env` 配置变更时，请同步更新本 README；以代码和 `.env.example` 为准。
