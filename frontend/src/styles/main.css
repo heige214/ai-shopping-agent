@@ -1,14 +1,19 @@
 :root {
   --color-primary: #ff5a1f;
   --color-primary-gradient: linear-gradient(135deg, #ff8a3d, #ff4d2e);
+  --color-primary-soft: #fff1eb;
+  --color-primary-border: #ffd2bd;
   --color-bg: #f6f7f9;
   --color-card: #ffffff;
+  --color-border: #eef0f3;
+  --color-field-bg: #f4f5f7;
   --color-text: #22262a;
   --color-text-secondary: #9aa0a6;
+  --color-text-tertiary: #a0a5ab;
   --color-price: #ff4d2e;
   --radius-card: 14px;
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04);
-  --van-primary-color: #ff5a1f;
+  --van-primary-color: var(--color-primary);
   --van-tabbar-height: 56px;
 }
 

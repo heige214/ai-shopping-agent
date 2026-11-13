@@ -27,11 +27,11 @@
 
 .home-header {
   height: 58px;
-  background: #fff;
+  background: var(--color-card);
   display: flex;
   align-items: center;
   padding: 0 16px;
-  border-bottom: 1px solid #eef0f3;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .brand {
@@ -70,7 +70,7 @@
 }
 
 .empty-card {
-  background: #fff;
+  background: var(--color-card);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
   padding: 36px 20px;
