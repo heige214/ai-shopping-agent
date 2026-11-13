@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 
+// 演示资料来自 backend/scripts/seed_demo_user.py；修改种子时同步断言
 test('演示账号登录后看到双 Tab 空壳', async ({ page }) => {
   await page.goto('/login')
   await page.getByPlaceholder('用户名').fill('demo')

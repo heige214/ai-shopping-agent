@@ -13,6 +13,7 @@
 - 前置状态（2026-11-13）：`git` 已初始化；M0 已完成；商品图本地备份尚未执行。
 - 主项目骨架已完成（M0）：认证、双 Tab 空壳、数据库迁移与测试基线可用；下一步进入 M1 商品域。
 - 本地开发端口：后端 8100（本机 Windows 保留 7997–8096，8000 不可用），前端 Vite 5173，`/api` 代理指向 8100。
+- 本地运行：以 `README.md` 的「本地启动」为准（Docker DB 5433、后端 8100、前端 5173、demo/demo123）。
 
 ## 已确认范围
 
@@ -50,7 +51,7 @@
 
 - 源目录：`backend/static/products`，300 张 PNG，约 342MB。
 - 按文件名首字母分 4 个 ZIP：`C` 服装、`S` 鞋靴、`B` 箱包、`A` 配饰，各 75 张；PNG 已压缩，ZIP 用存储模式，不做二次压缩。
-- 备份目录：`D:\backups\graduation-project-new\2026-11-12\`，再复制一份到 `C:\Users\ASUS\Backups\graduation-project-new\2026-11-12\`。
+- 备份目录：`D:\backups\graduation-project-new\2026-11-12\`，再复制一份到 `%USERPROFILE%\Backups\graduation-project-new\2026-11-12\`。
 - 生成 `products-manifest.csv`（文件名、品类、字节数、SHA-256）和 `RESTORE.md`。
 - 校验：ZIP 条目数、CRC、每包抽 1 张与源文件比 SHA-256、两份 ZIP 的 SHA-256 一致。
 - 网盘：用户自行把 4 个 ZIP 上传到阿里云盘私有目录；上传后下载一个 ZIP 回来比对 SHA-256。
@@ -63,7 +64,7 @@
 
 1. 开场先读：设计文档相关章节、实施计划对应模块、本交接页、`docs/progress.md`、相关现有代码。
 2. 只改本模块范围内的文件；共享契约（API DTO、错误码、DB 字段、路由）不要擅自改，确需修改先更新文档。
-3. 结束前跑本模块测试 + 相关 E2E；提交 git；更新 `docs/progress.md`（完成项、遗留、下一模块依赖）。
+3. 结束前跑本模块测试 + 相关 E2E；提交 git；更新 `docs/progress.md`（完成项、遗留、下一模块依赖）与 `docs/implementation-handoff.md`（当前状态、下一步）。
 4. 每 2~3 个模块安排一次集成检查，不要留到答辩前。
 
 前置条件：项目已是 git 仓库（分支 `m0-project-skeleton`），继续按每模块一提交的纪律执行；新窗口通过 `git log` 判断上一窗口改了什么。
@@ -76,7 +77,10 @@
 
 - `docs/superpowers/specs/2026-11-11-ai-shopping-agent-design.md`（重点 §7、§8、§10.2、§11.1.3）
 - `docs/superpowers/plans/2026-11-13-m0-project-skeleton.md`（已完成，作为基线参考）
+- `README.md`（本地启动、测试、重置步骤）
 - `docs/implementation-handoff.md`
 - `docs/progress.md`（M0 记录）
 
 然后为 M1「商品域 + 种子数据 + 商品详情」写实施计划：categories/products/product_skus/favorites 表、300 商品种子数据、商品列表/详情接口、商品详情页与收藏。
+
+M1 只消费 `backend/static/products` 中已生成的商品图，不再做 AI 生图；接口按设计文档 §10.2 落地，至少包含 categories/products/product_skus/favorites 与商品列表/详情。
