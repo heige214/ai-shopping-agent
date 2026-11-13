@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { showConfirmDialog } from 'vant'
 
@@ -6,6 +7,14 @@ import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
 const router = useRouter()
+
+const profileSummary = computed(() => {
+  const parts: string[] = []
+  if (auth.user?.height_cm) parts.push(`${auth.user.height_cm}cm`)
+  if (auth.user?.weight_kg) parts.push(`${auth.user.weight_kg}kg`)
+  if (auth.user?.usual_size) parts.push(`常穿 ${auth.user.usual_size} 码`)
+  return parts.join(' · ') || `账号：${auth.user?.username ?? ''}`
+})
 
 async function handleLogout(): Promise<void> {
   try {
@@ -26,7 +35,7 @@ async function handleLogout(): Promise<void> {
     <header class="me-header">
       <h1>我的</h1>
     </header>
-    <main class="me-body">
+    <div class="me-body">
       <section class="me-card">
         <div class="me-avatar" aria-hidden="true">
           {{ (auth.user?.nickname || auth.user?.username || '?').slice(0, 1) }}
@@ -35,16 +44,7 @@ async function handleLogout(): Promise<void> {
           <div class="me-name">
             {{ auth.user?.nickname || auth.user?.username }}
           </div>
-          <div class="me-sub">
-            <template v-if="auth.user?.height_cm || auth.user?.weight_kg">
-              <span v-if="auth.user?.height_cm">{{ auth.user?.height_cm }}cm</span>
-              <span v-if="auth.user?.weight_kg"> / {{ auth.user?.weight_kg }}kg</span>
-              <span v-if="auth.user?.usual_size">
-                · 常穿 {{ auth.user?.usual_size }} 码
-              </span>
-            </template>
-            <template v-else>账号：{{ auth.user?.username }}</template>
-          </div>
+          <div class="me-sub">{{ profileSummary }}</div>
         </div>
       </section>
 
@@ -56,14 +56,15 @@ async function handleLogout(): Promise<void> {
       <van-button block class="logout-button" @click="handleLogout">
         退出登录
       </van-button>
-    </main>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .me-page {
   min-height: calc(100vh - 56px);
-  min-height: calc(100dvh - 56px);
+  min-height: calc(100vh - 56px - env(safe-area-inset-bottom));
+  min-height: calc(100dvh - 56px - env(safe-area-inset-bottom));
   background: var(--color-bg);
 }
 
@@ -143,7 +144,7 @@ async function handleLogout(): Promise<void> {
 
 .logout-button {
   margin-top: 18px;
-  height: 42px;
+  height: 44px;
   border-radius: 9px;
   color: var(--color-price);
   border: 1px solid var(--color-primary-border);

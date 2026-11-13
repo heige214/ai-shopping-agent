@@ -15,26 +15,27 @@ const displayName = computed(
       <div class="brand">
         <div class="brand-logo" aria-hidden="true">AI</div>
         <div>
-          <div class="brand-title">AI 找货</div>
+          <h1 class="brand-title">AI 找货</h1>
           <div class="brand-sub">对话式导购助手</div>
         </div>
       </div>
     </header>
-    <main class="home-body">
+    <div class="home-body">
       <div class="empty-card">
         <div class="empty-avatar" aria-hidden="true">AI</div>
         <h2>你好，{{ displayName }}</h2>
         <p>AI 导购对话将在 M4 上线</p>
         <p class="empty-sub">当前为 M0 项目骨架，登录与双 Tab 已就绪</p>
       </div>
-    </main>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .home-page {
   min-height: calc(100vh - 56px);
-  min-height: calc(100dvh - 56px);
+  min-height: calc(100vh - 56px - env(safe-area-inset-bottom));
+  min-height: calc(100dvh - 56px - env(safe-area-inset-bottom));
   background: var(--color-bg);
 }
 
@@ -70,6 +71,7 @@ const displayName = computed(
   font-size: 15px;
   font-weight: 700;
   line-height: 1.1;
+  margin: 0;
 }
 
 .brand-sub {

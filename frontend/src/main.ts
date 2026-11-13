@@ -22,7 +22,8 @@ const auth = useAuthStore(pinia)
 window.addEventListener(AUTH_EXPIRED_EVENT, () => {
   auth.clear()
   const current = router.currentRoute.value
-  if (current.name !== 'login') {
+  // 首屏导航期间 currentRoute 仍是 START_LOCATION，此时由路由守卫负责 redirect
+  if (current.matched.length > 0 && current.name !== 'login') {
     router.push({ name: 'login', query: { redirect: current.fullPath } })
   }
 })
