@@ -9,6 +9,14 @@ TEST_DATABASE_URL = os.environ.get(
     "TEST_DATABASE_URL",
     "postgresql+asyncpg://shop:shop@localhost:5433/shop_test",
 )
+
+# 防止误把开发库当成测试库：clean_users 会清空 users 表
+_test_database_name = TEST_DATABASE_URL.rsplit("/", 1)[-1].split("?")[0]
+if not _test_database_name.endswith("_test"):
+    raise RuntimeError(
+        f"TEST_DATABASE_URL 必须指向名称以 _test 结尾的测试库，当前为 {_test_database_name!r}"
+    )
+
 os.environ["DATABASE_URL"] = TEST_DATABASE_URL
 os.environ.setdefault(
     "JWT_SECRET_KEY", "test-secret-key-for-pytest-only-0123456789abcdef"
@@ -39,16 +47,9 @@ def migrated_database():
     yield
 
 
-@pytest.fixture(scope="session")
-def client(migrated_database):
-    """整个测试会话共用一个 TestClient。"""
-    with TestClient(app) as test_client:
-        yield test_client
-
-
-@pytest.fixture(autouse=True)
+@pytest.fixture
 def clean_users(migrated_database):
-    """每个测试开始前清空 users 表，保证用例互不影响。"""
+    """数据库/API 测试开始前清空 users 表；纯单元测试不依赖此 fixture。"""
 
     async def _clean() -> None:
         engine = create_async_engine(TEST_DATABASE_URL, poolclass=NullPool)
@@ -60,3 +61,10 @@ def clean_users(migrated_database):
 
     asyncio.run(_clean())
     yield
+
+
+@pytest.fixture
+def client(clean_users):
+    """每个测试使用独立 TestClient；会先清空 users 表。"""
+    with TestClient(app) as test_client:
+        yield test_client
