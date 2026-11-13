@@ -1387,7 +1387,7 @@ services:
 ```text
 DASHSCOPE_API_KEY=
 DATABASE_URL=postgresql+asyncpg://shop:password@db:5432/shop
-JWT_SECRET=
+JWT_SECRET_KEY=
 JWT_EXPIRE_MINUTES=10080
 UPLOAD_DIR=/app/uploads
 STATIC_DIR=/app/static

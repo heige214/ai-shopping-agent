@@ -10,8 +10,9 @@
   - `docs/mockups/screens-agent.png`：客服端队列、会话工作台、知识审核
   - HTML 源文件与 `mockup.css` 在同一目录。
 - 商品图片：`backend/static/products` 共 300 张（4 个一级品类 × 75），鞋靴 75 张已补齐。
-- 前置状态（2026-11-13）：`git` 尚未初始化；商品图本地备份尚未执行。
-- 主项目业务代码尚未开始；目前只有独立工具 `tools/image-batch`。
+- 前置状态（2026-11-13）：`git` 已初始化；M0 已完成；商品图本地备份尚未执行。
+- 主项目骨架已完成（M0）：认证、双 Tab 空壳、数据库迁移与测试基线可用；下一步进入 M1 商品域。
+- 本地开发端口：后端 8100（本机 Windows 保留 7997–8096，8000 不可用），前端 Vite 5173，`/api` 代理指向 8100。
 
 ## 已确认范围
 
@@ -73,8 +74,9 @@
 
 新窗口先读：
 
-- `docs/superpowers/specs/2026-11-11-ai-shopping-agent-design.md`
+- `docs/superpowers/specs/2026-11-11-ai-shopping-agent-design.md`（重点 §7、§8、§10.2、§11.1.3）
+- `docs/superpowers/plans/2026-11-13-m0-project-skeleton.md`（已完成，作为基线参考）
 - `docs/implementation-handoff.md`
-- `docs/progress.md`（当前为空模板，M0 完成后开始记）
+- `docs/progress.md`（M0 记录）
 
-然后使用 `writing-plans` 技能写实施计划，不要重新做需求设计。
+然后为 M1「商品域 + 种子数据 + 商品详情」写实施计划：categories/products/product_skus/favorites 表、300 商品种子数据、商品列表/详情接口、商品详情页与收藏。
