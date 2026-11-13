@@ -29,12 +29,16 @@ async function handleSubmit(): Promise<void> {
   try {
     await auth.login({ username: form.username.trim(), password: form.password })
     showToast('登录成功')
+    const fallback =
+      auth.user?.role === 'agent' || auth.user?.role === 'admin'
+        ? '/agent/orders'
+        : '/'
     const redirect =
       typeof route.query.redirect === 'string' &&
       route.query.redirect.startsWith('/') &&
       !route.query.redirect.startsWith('//')
         ? route.query.redirect
-        : '/'
+        : fallback
     await router.replace(redirect)
   } catch (error) {
     showToast(getErrorMessage(error))
@@ -100,7 +104,10 @@ function goRegister(): void {
     >
       注册新账号
     </van-button>
-    <p class="login-hint">演示账号：demo / demo123</p>
+    <p class="login-hint">
+      演示账号：demo / demo123<br />
+      客服账号：agent / agent123
+    </p>
   </div>
 </template>
 

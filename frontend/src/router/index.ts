@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { showToast } from 'vant'
 
 import { useAuthStore } from '@/stores/auth'
+import type { UserRole } from '@/types'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -37,6 +39,42 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/cart',
+      name: 'cart',
+      component: () => import('@/views/user/CartView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/checkout',
+      name: 'checkout',
+      component: () => import('@/views/user/CheckoutView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/orders',
+      name: 'orders',
+      component: () => import('@/views/user/OrdersView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/orders/:id',
+      name: 'order-detail',
+      component: () => import('@/views/user/OrderDetailView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/addresses',
+      name: 'addresses',
+      component: () => import('@/views/user/AddressesView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/agent/orders',
+      name: 'agent-orders',
+      component: () => import('@/views/agent/AgentOrdersView.vue'),
+      meta: { requiresAuth: true, roles: ['agent', 'admin'] },
+    },
+    {
       path: '/',
       component: () => import('@/layouts/TabbarLayout.vue'),
       meta: { requiresAuth: true },
@@ -65,6 +103,12 @@ router.beforeEach(async (to) => {
     return { name: 'login', query: { redirect: to.fullPath } }
   }
   if (to.meta.guestOnly && auth.isAuthenticated) {
+    return { name: 'home' }
+  }
+
+  const roles = to.meta.roles as UserRole[] | undefined
+  if (roles && (!auth.user || !roles.includes(auth.user.role))) {
+    showToast('无权访问客服工作台')
     return { name: 'home' }
   }
   return true
