@@ -10,8 +10,8 @@
   - `docs/mockups/screens-agent.png`：客服端队列、会话工作台、知识审核
   - HTML 源文件与 `mockup.css` 在同一目录。
 - 商品图片：`backend/static/products` 共 300 张（4 个一级品类 × 75），鞋靴 75 张已补齐。
-- 前置状态（2026-11-13）：`git` 已初始化；M0 已完成；商品图本地备份尚未执行。
-- 主项目骨架已完成（M0）：认证、双 Tab 空壳、数据库迁移与测试基线可用；下一步进入 M1 商品域。
+- 前置状态（2026-11-13）：`git` 已初始化；M0、M1 已完成；商品图本地备份尚未执行。
+- 主项目骨架与商品域已完成：M0 认证/双 Tab/迁移/测试基线；M1 品类/商品/SKU/收藏/分类列表/商品详情/可复用商品发现组件。
 - 本地开发端口：后端 8100（本机 Windows 保留 7997–8096，8000 不可用），前端 Vite 5175（避开本机其他项目常占用的 5173/5174），`/api` 代理指向 8100。
 - 本地运行：以 `README.md` 的「本地启动」为准（Docker DB 5433、后端 8100、前端 5175、demo/demo123）。
 
@@ -35,7 +35,7 @@
 - 一个客服最多同时接 3 个会话，按 FIFO 排队。
 - 客服掉线超过 2 分钟，工单自动回队列；无客服在线时提示离线留言。
 - 用户关闭页面不等于结束会话，30 分钟无消息才自动结束。
-- 种子数据规模：300 商品、3000~5000 SKU、600~900 条商品 FAQ。
+- 种子数据规模：300 商品、实际 1108 条 SKU（一商品一图一色、按实际尺码）、600~900 条商品 FAQ（M3 再生成）。
 - 排期按设计文档 §15 的 26 周（23 周开发 + 3 周缓冲），实施计划先拆 M0~M2。
 - 演示保障：一键重置脚本、AI 超时降级、关键路径提前预热、录屏备份。
 
@@ -75,12 +75,12 @@
 
 新窗口先读：
 
-- `docs/superpowers/specs/2026-11-11-ai-shopping-agent-design.md`（重点 §7、§8、§10.2、§11.1.3）
-- `docs/superpowers/plans/2026-11-13-m0-project-skeleton.md`（已完成，作为基线参考）
+- `docs/superpowers/specs/2026-11-11-ai-shopping-agent-design.md`（重点 §7、§8、§10.2、§11.2）
+- `docs/superpowers/plans/2026-11-13-m0-project-skeleton.md`、`docs/superpowers/plans/2026-11-13-m1-product-catalog.md`（已完成，作为基线参考）
 - `README.md`（本地启动、测试、重置步骤）
 - `docs/implementation-handoff.md`
-- `docs/progress.md`（M0 记录）
+- `docs/progress.md`（M0、M1 记录）
 
-然后为 M1「商品域 + 种子数据 + 商品详情」写实施计划：categories/products/product_skus/favorites 表、300 商品种子数据、商品列表/详情接口、商品详情页与收藏。
+然后进入 M2「购物车、地址、订单、模拟支付/发货」：复用 `products` / `product_skus` / `favorites`、Axios 客户端、Pinia 用户态与详情页底部占位按钮。购物车落 `product_skus.id`，需要补库存扣减/恢复与订单状态机；M2 不要改 M0 认证契约和 M1 商品 DTO。
 
-M1 只消费 `backend/static/products` 中已生成的商品图，不再做 AI 生图；接口按设计文档 §10.2 落地，至少包含 categories/products/product_skus/favorites 与商品列表/详情。
+M1 已消费 `backend/static/products` 中 300 张商品图，不再做 AI 生图；M2 加购时校验 SKU 库存即可，不重新生成商品图。

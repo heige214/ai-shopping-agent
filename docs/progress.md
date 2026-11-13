@@ -11,7 +11,7 @@
 | 里程碑 | 内容 | 状态 | 最近提交 |
 |---|---|---|---|
 | M0 | 项目骨架：配置、DB、认证、前端壳、测试基线 | 已完成 | m0 |
-| M1 | 商品域 + 种子数据 + 商品详情 | 未开始 | — |
+| M1 | 商品域 + 种子数据 + 商品详情 | 已完成 | m1-product-catalog |
 | M2 | 购物车、地址、订单、模拟支付/发货 | 未开始 | — |
 | M3 | 知识库 + RAG 商品客服 | 未开始 | — |
 | M4 | 导购聊天、意图槽位、澄清、尺码 | 未开始 | — |
@@ -30,6 +30,41 @@
 ## 模块记录
 
 <!-- 每完成一个模块，把记录加在这里的最上面；第一条从 M0 开始。 -->
+
+## 2026-11-13 · M1 商品域 + 种子数据 + 商品详情
+
+- 状态：已完成
+- 本次目标：建商品域四表与可重复种子，打通品类树、商品列表/详情、收藏和商品详情页；AI 找货 Tab 提供可复用商品发现入口。
+- 完成内容：
+  - 后端：`categories` / `products` / `product_skus` / `favorites` 四表与 Alembic 迁移；`products.product_code` 唯一；`embedding vector(1024)` 建列但保持 NULL；品类树（父级 + 叶子合并 `attribute_schema`）；商品列表（`category_id` / `q` / `page` / `page_size` / `sort`，一级品类包含子类）；商品详情（SKU、尺码表、属性、`is_favorited`）；收藏列表与幂等增删；`/static` 商品图挂载；可选登录依赖 `get_current_user_optional`。
+  - 种子：4 个一级 + 34 个叶子品类；300 个商品；实际 1108 条 SKU（服装 375、鞋靴 375、箱包 209、配饰 149）；300 张已有商品图；`build_catalog_seed.py`（CSV→JSON，价格/销量/库存一次性生成，默认不覆盖 JSON）与 `seed_catalog.py`（JSON→DB upsert，重复执行不重复、不丢收藏）分离；每商品一图一色，单尺码商品用“均码”。
+  - 前端：AI 找货 Tab 嵌入可复用 `ProductDiscoveryPanel`（4 个品类入口 + 热门商品）；`/category/:id` 分类列表（搜索、排序、分页）；`/product/:id` 详情（颜色、尺码、SKU 库存、尺码表弹层、属性、设计细节 tags、收藏）；`/favorites` 收藏页；Me 页“我的收藏”入口；加购/立即购买/客服为 toast 占位。
+  - 测试：后端 pytest 新增 22 项（schema、DTO 合并、API、seed/build、幂等与图片校验）；前端 build 通过；Playwright 新增“列表→详情→收藏→我的收藏→取消收藏”用例，M0 认证 E2E 不回归。
+- 改动文件 / 目录：
+  - `backend/app/modules/catalog/`、`backend/app/models.py`、`backend/app/main.py`、`backend/app/modules/auth/deps.py`
+  - `backend/alembic/versions/20261113_0002_create_catalog.py`
+  - `backend/seeds/catalog/`、`backend/scripts/build_catalog_seed.py`、`backend/scripts/seed_catalog.py`
+  - `backend/tests/test_catalog_*.py`、`backend/tests/unit/test_catalog_*.py`、`backend/tests/conftest.py`、`backend/requirements.txt`
+  - `frontend/src/types/catalog.ts`、`frontend/src/api/catalog.ts`、`frontend/src/stores/catalog.ts`、`frontend/src/stores/favorites.ts`、`frontend/src/utils/format.ts`、`frontend/src/utils/colors.ts`
+  - `frontend/src/components/catalog/`、`frontend/src/views/user/HomeView.vue`、`CategoryView.vue`、`ProductDetailView.vue`、`FavoritesView.vue`、`MeView.vue`
+  - `frontend/src/router/index.ts`、`frontend/src/main.ts`、`frontend/vite.config.ts`、`frontend/playwright.config.ts`、`frontend/tests/e2e/catalog.spec.ts`
+  - `README.md`、设计文档 §7.2.2 / §8.1 / §8.2 / §10.2、`docs/superpowers/plans/2026-11-13-m1-product-catalog.md`
+- DB 迁移：`20261113_0002_create_catalog`
+- 新增环境变量：无
+- 测试与验收：
+  - 命令：`cd backend && source .venv/Scripts/activate && python -m pytest -v`；`cd frontend && npm run build`；`cd frontend && npm run test:e2e`
+  - 结果：后端 `70 passed`（45.52s）；前端构建成功（vue-tsc 无报错）；E2E `3 passed`（13.2s）；手工/接口抽查覆盖分类树合并 schema、父品类含子类、三种排序、详情公开 + 登录 `is_favorited`、收藏幂等、`/static` 图片、重复 seed 后收藏保留。
+- 种子实际数量：商品 300、SKU 1108（服装 375、鞋靴 375、箱包 209、配饰 149）、图片 300。
+- 遗留问题：
+  - [后续] 商品搜索为 `ILIKE` 子串匹配，未接分词/向量检索；M4 再接混合检索。
+  - [后续] `products.embedding` 已建列但保持 NULL，M3/M4 再生成向量。
+  - [后续] 商品详情“好评率”、购物车、立即购买、客服为占位；M2/M3/M6 接入。
+  - [后续] 尺码推荐卡片按计划留到 M4；M1 只提供尺码表与尺码选择。
+  - [后续] `backend/static/products` 仍未单独备份；商品图不进 git。
+  - [后续] 商品列表筛选目前只做品类/关键词/排序，叶子属性筛选（颜色、材质等）待 M4 对话找货或后续补 UI。
+  - [备注] Playwright 因 demo 账号共享状态固定 `workers: 1`；新增测试文件不要依赖并行隔离。
+- 下一模块依赖：M2 可直接复用 `products` / `product_skus`、`favorites` 用户态、Axios 客户端与详情页底部占位按钮；购物车落 SKU 时使用 `product_skus.id` 与库存，需新增库存扣减/恢复与订单状态机。
+- commit：M1 分支 `m1-product-catalog`（见 `git log`）
 
 ## 2026-11-13 · M0 项目骨架
 

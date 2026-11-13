@@ -8,7 +8,8 @@
 
 ## 当前进度
 
-M0 项目骨架：登录 / 注册、双 Tab 空壳、PostgreSQL + Alembic、pytest、Playwright。
+- M0 项目骨架：登录 / 注册、双 Tab 空壳、PostgreSQL + Alembic、pytest、Playwright。
+- M1 商品域：4 个一级 + 34 个叶子品类、300 个商品、1108 条 SKU、收藏、分类列表、商品详情与可复用商品发现组件。
 
 ## 环境要求
 
@@ -61,6 +62,7 @@ else:
 PY
 python -m alembic upgrade head
 python -m scripts.seed_demo_user
+python -m scripts.seed_catalog
 uvicorn app.main:app --reload --port 8100
 ```
 
@@ -94,7 +96,23 @@ source .venv/Scripts/activate
 python -m pytest
 ```
 
-前端 E2E（先确保数据库已迁移、演示账号已创建、后端已在 8100 端口运行）：
+商品种子（`backend/seeds/catalog/products.json`）已提交；日常启动或重置数据库后直接导入：
+
+```bash
+cd backend
+source .venv/Scripts/activate
+python -m scripts.seed_catalog
+```
+
+只有 CSV 或品类 schema 变更、且确认要重建时才运行：
+
+```bash
+python -m scripts.build_catalog_seed --force
+```
+
+`build` 默认拒绝覆盖已有 JSON；`seed` 按 `product_code` / `sku_code` upsert，重复执行不会重复插入，也不会丢收藏。
+
+前端 E2E（先确保数据库已迁移、演示账号与商品种子已创建、后端已在 8100 端口运行）：
 
 ```bash
 cd frontend
@@ -125,6 +143,7 @@ cd ../backend
 source .venv/Scripts/activate   # macOS/Linux 用 .venv/bin/activate
 python -m alembic upgrade head
 python -m scripts.seed_demo_user
+python -m scripts.seed_catalog
 ```
 
 ## 主要目录
@@ -132,35 +151,39 @@ python -m scripts.seed_demo_user
 ```text
 backend/
 ├── app/
-│   ├── core/          # 配置、安全
-│   ├── db/            # engine、Base、session
-│   ├── modules/auth/  # 用户、注册、登录
+│   ├── core/             # 配置、安全
+│   ├── db/               # engine、Base、session
+│   ├── modules/auth/     # 用户、注册、登录
+│   ├── modules/catalog/  # 品类、商品、SKU、收藏
 │   ├── main.py
 │   └── models.py
-├── alembic/           # 数据库迁移
-├── scripts/           # 种子脚本
-└── tests/             # pytest
+├── alembic/              # 数据库迁移
+├── seeds/catalog/        # 品类与商品种子 JSON（商品 JSON 由 CSV 生成）
+├── scripts/              # 种子脚本
+├── static/products/      # 300 张商品图（gitignored）
+└── tests/                # pytest
 
 frontend/
 ├── src/
-│   ├── api/           # Axios 客户端与接口封装
-│   ├── layouts/       # 双 Tab 布局
-│   ├── router/        # 路由与鉴权守卫
-│   ├── stores/        # Pinia 状态
-│   ├── styles/        # 设计变量与全局样式
-│   ├── types/         # TypeScript 类型
-│   ├── utils/         # token、错误提示
-│   └── views/user/    # 登录、注册、AI 找货、我的
-├── tests/e2e/         # Playwright 端到端测试
+│   ├── api/              # Axios 客户端与接口封装
+│   ├── components/catalog/ # 商品图、商品卡、商品发现面板
+│   ├── layouts/          # 双 Tab 布局
+│   ├── router/           # 路由与鉴权守卫
+│   ├── stores/           # Pinia 状态
+│   ├── styles/           # 设计变量与全局样式
+│   ├── types/            # TypeScript 类型
+│   ├── utils/            # token、错误提示、格式化、颜色
+│   └── views/user/       # 登录、注册、AI 找货、分类、详情、收藏、我的
+├── tests/e2e/            # Playwright 端到端测试
 ├── playwright.config.ts
 └── vite.config.ts
 
-deploy/                # 开发数据库 Docker Compose
+deploy/                   # 开发数据库 Docker Compose
 ```
 
 ## 说明
 
-- `backend/static/products/` 约 342MB，已在 `.gitignore` 中排除，需单独备份；M0 运行不依赖商品图，后续商品模块再使用。
+- `backend/static/products/` 约 342MB，已在 `.gitignore` 中排除，需单独备份；M1 商品图通过后端 `/static` 挂载、Vite `/static` 代理访问。
 - 演示账号 `demo / demo123` 仅用于本地演示，生产环境必须更换密码。
 - 当前登录态为 7 天 JWT，存 localStorage（仅为简化实现，生产应改用 HttpOnly Cookie）；refresh token 留到后续安全增强。
 - 启动命令、端口、演示账号或 `.env` 配置变更时，请同步更新本 README；以代码和 `.env.example` 为准。
