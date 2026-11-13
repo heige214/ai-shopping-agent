@@ -1,3 +1,4 @@
+import axios from 'axios'
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 
@@ -14,6 +15,7 @@ export const useAuthStore = defineStore('auth', () => {
   const token = ref<string | null>(getToken())
   const user = ref<User | null>(null)
   const initialized = ref(false)
+  let pending: Promise<void> | null = null
 
   const isAuthenticated = computed(() => Boolean(token.value))
 
@@ -40,21 +42,31 @@ export const useAuthStore = defineStore('auth', () => {
     await login({ username: payload.username, password: payload.password })
   }
 
-  async function ensureUserLoaded(): Promise<void> {
+  async function loadUser(): Promise<void> {
+    try {
+      user.value = await authApi.fetchMe()
+      initialized.value = true
+    } catch (error) {
+      // 只有明确的 401 才清登录态；网络错误/5xx 保留 token，下次导航再重试
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        clear()
+      }
+    }
+  }
+
+  function ensureUserLoaded(): Promise<void> {
     if (initialized.value) {
-      return
+      return Promise.resolve()
     }
     if (!token.value) {
       initialized.value = true
-      return
+      return Promise.resolve()
     }
-    try {
-      user.value = await authApi.fetchMe()
-    } catch {
-      clear()
-    } finally {
-      initialized.value = true
-    }
+    // 并发导航只发一次 /auth/me
+    pending ??= loadUser().finally(() => {
+      pending = null
+    })
+    return pending
   }
 
   function logout(): void {
