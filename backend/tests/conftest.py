@@ -22,7 +22,7 @@ os.environ.setdefault(
     "JWT_SECRET_KEY", "test-secret-key-for-pytest-only-0123456789abcdef"
 )
 os.environ.setdefault("JWT_EXPIRE_MINUTES", "10080")
-os.environ.setdefault("CORS_ORIGINS", "http://localhost:5173")
+os.environ.setdefault("CORS_ORIGINS", "http://localhost:5175")
 
 import pytest
 from fastapi.testclient import TestClient

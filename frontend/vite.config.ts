@@ -11,7 +11,8 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5173,
+    // 固定 5175，避开本机其他项目常占用的 5173/5174
+    port: 5175,
     strictPort: true,
     proxy: {
       '/api': {

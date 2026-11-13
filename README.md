@@ -66,7 +66,7 @@ uvicorn app.main:app --reload --port 8100
 
 健康检查：<http://localhost:8100/api/health>
 
-说明：本项目本地开发统一使用 **8100**（本机 Windows 保留了 7997–8096 端口段，8000 不可用），前端 Vite 的 `/api` 代理已指向该端口。如需改用其他端口，请同步调整 `uvicorn` 启动端口与 `frontend/vite.config.ts` 的代理目标；若修改前端端口，还需同步 `frontend/vite.config.ts` 的 `server.port`、`backend/.env` 的 `CORS_ORIGINS`，以及 `frontend/playwright.config.ts` 的 `baseURL` 与 `webServer.url`。
+说明：本项目本地开发后端统一使用 **8100**（本机 Windows 保留了 7997–8096 端口段，8000 不可用），前端 Vite 固定使用 **5175**（避开本机其他项目常占用的 5173/5174），`/api` 代理已指向 8100。如需改用其他端口，请同步调整 `uvicorn` 启动端口与 `frontend/vite.config.ts` 的代理目标；若修改前端端口，还需同步 `frontend/vite.config.ts` 的 `server.port`、`backend/.env` 的 `CORS_ORIGINS`，以及 `frontend/playwright.config.ts` 的 `baseURL` 与 `webServer.url`。
 
 ### 3. 启动前端
 
@@ -76,7 +76,7 @@ npm install
 npm run dev
 ```
 
-打开 <http://localhost:5173>，使用演示账号 **demo / demo123** 登录。登录后进入「AI 找货」Tab，可在底部切换到「我的」。
+打开 <http://localhost:5175>，使用演示账号 **demo / demo123** 登录。登录后进入「AI 找货」Tab，可在底部切换到「我的」。
 
 演示资料：昵称「小鹿」、172cm、75kg、常穿 M 码（E2E 依赖）。
 
@@ -102,7 +102,7 @@ npx playwright install chromium   # 首次
 npm run test:e2e
 ```
 
-E2E 会自行启动 Vite，请先停止前端 dev server 并确保 5173 端口空闲；测试完成后 Vite 自动关闭。后端需保持运行。
+E2E 会自行启动 Vite，请先停止前端 dev server 并确保 5175 端口空闲；测试完成后 Vite 自动关闭。后端需保持运行。
 
 ## 停止与重置
 

@@ -5,7 +5,7 @@ export default defineConfig({
   timeout: 30_000,
   fullyParallel: false,
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL: 'http://localhost:5175',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
@@ -20,7 +20,7 @@ export default defineConfig({
   ],
   webServer: {
     command: 'npm run dev',
-    url: 'http://localhost:5173',
+    url: 'http://localhost:5175',
     reuseExistingServer: false,
     timeout: 60_000,
   },
