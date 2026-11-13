@@ -1,9 +1,13 @@
 import asyncio
 import os
+from datetime import datetime, timedelta, timezone
 
 import asyncpg
+import jwt
 
+from app.core.config import settings
 from app.core.security import verify_password
+from app.modules.auth import service
 
 
 def register(
@@ -64,6 +68,35 @@ def fetch_password_hash(username: str) -> str:
             await connection.close()
 
     return asyncio.run(_fetch())
+
+
+def delete_user(username: str) -> None:
+    dsn = os.environ["DATABASE_URL"].replace("postgresql+asyncpg://", "postgresql://")
+
+    async def _delete() -> None:
+        connection = await asyncpg.connect(dsn)
+        try:
+            await connection.execute(
+                "DELETE FROM users WHERE username = $1", username
+            )
+        finally:
+            await connection.close()
+
+    asyncio.run(_delete())
+
+
+def make_expired_token(user_id: int) -> str:
+    now = datetime.now(timezone.utc)
+    return jwt.encode(
+        {
+            "sub": str(user_id),
+            "type": "access",
+            "iat": now - timedelta(hours=2),
+            "exp": now - timedelta(hours=1),
+        },
+        settings.jwt_secret_key,
+        algorithm=settings.jwt_algorithm,
+    )
 
 
 def test_register_strips_username(client):
@@ -177,3 +210,71 @@ def test_me_with_invalid_token_returns_401(client):
         "/api/auth/me", headers={"Authorization": "Bearer invalid-token"}
     )
     assert response.status_code == 401
+
+
+def test_me_with_deleted_user_returns_401(client):
+    register(client)
+    token = login(client).json()["access_token"]
+    delete_user("alice")
+    response = client.get(
+        "/api/auth/me", headers={"Authorization": f"Bearer {token}"}
+    )
+    assert response.status_code == 401
+
+
+def test_me_with_non_bearer_scheme_returns_401(client):
+    response = client.get(
+        "/api/auth/me", headers={"Authorization": "Basic abc"}
+    )
+    assert response.status_code == 401
+    assert response.headers["www-authenticate"] == "Bearer"
+
+
+def test_me_with_empty_bearer_returns_401(client):
+    response = client.get(
+        "/api/auth/me", headers={"Authorization": "Bearer"}
+    )
+    assert response.status_code == 401
+
+
+def test_me_with_expired_token_returns_401(client):
+    register(client)
+    user_id = login(client).json()["user"]["id"]
+    response = client.get(
+        "/api/auth/me",
+        headers={"Authorization": f"Bearer {make_expired_token(user_id)}"},
+    )
+    assert response.status_code == 401
+
+
+def test_login_validation_error_does_not_echo_password(client):
+    response = client.post(
+        "/api/auth/login", json={"username": "alice", "password": "x" * 200}
+    )
+    assert response.status_code == 422
+    assert "x" * 200 not in response.text
+
+
+def test_login_strips_username(client):
+    register(client)
+    response = login(client, username="  alice  ")
+    assert response.status_code == 200
+
+
+def test_login_username_is_case_sensitive(client):
+    register(client, username="alice")
+    response = login(client, username="Alice")
+    assert response.status_code == 401
+
+
+def test_login_unknown_user_verifies_dummy_hash(client, monkeypatch):
+    calls = []
+    real_verify = service.verify_password
+
+    def spy(password: str, password_hash: str) -> bool:
+        calls.append(password_hash)
+        return real_verify(password, password_hash)
+
+    monkeypatch.setattr(service, "verify_password", spy)
+    login(client, username="nobody")
+    assert calls == [service.DUMMY_PASSWORD_HASH]
