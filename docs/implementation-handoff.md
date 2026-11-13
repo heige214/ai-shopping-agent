@@ -25,7 +25,7 @@
 - 前端视觉：以 `docs/mockups/screens-user-part1.png`、`screens-user-part2.png`、`screens-agent.png`、`mockup.css` 和设计文档 §11.1.9 为准；只参考布局与视觉，不复制 mockup 的 HTML/CSS，统一用 Vue 3 + Vant 4 重写。
 - M0 页面范围：只做登录页、注册页、「AI 找货」空壳、「我的」空壳；其余用户端页面和 3 个客服端页面按里程碑逐步实现。
 - 参考登录模块 `D:\develop\功能模块\登录注册模块` 只读参考、不修改；只借用 JWT Bearer、Axios 拦截器、Pinia store、路由守卫的组织方式，不引入 Element Plus 界面、邮箱验证码、OAuth、refresh token 轮换、登录限流、SQLite 测试库。
-- 不做：Agent Assist、真实支付/物流/退款/售后、全自主 ReAct、多租户/多仓/优惠券/商品评价、高并发/多实例部署。
+- 不做：Agent Assist、真实支付/物流/退款/售后、全自主 ReAct、多租户/多仓/优惠券/商品评价、原生 App/小程序/PWA 打包（只做移动端 H5）、高并发/多实例部署。
 
 ## 实施计划默认值（聊天中已提出，用户未反对，按此写）
 
