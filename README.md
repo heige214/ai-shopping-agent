@@ -45,16 +45,19 @@ from pathlib import Path
 
 path = Path(".env")
 text = path.read_text(encoding="utf-8")
-new_text, count = re.subn(
-    r"(?m)^JWT_SECRET_KEY=\s*$",
-    f"JWT_SECRET_KEY={secrets.token_urlsafe(48)}",
-    text,
-    count=1,
-)
-if count == 0:
-    raise SystemExit("JWT_SECRET_KEY 已配置或格式不符，未修改 .env")
-path.write_text(new_text, encoding="utf-8")
-print("JWT_SECRET_KEY 已写入 .env")
+if re.search(r"(?m)^JWT_SECRET_KEY=[^\s#]+", text):
+    print("JWT_SECRET_KEY 已配置，跳过")
+else:
+    new_text, count = re.subn(
+        r"(?m)^JWT_SECRET_KEY=[ \t]*$",
+        f"JWT_SECRET_KEY={secrets.token_urlsafe(48)}",
+        text,
+        count=1,
+    )
+    if count == 0:
+        raise SystemExit("未找到可填充的 JWT_SECRET_KEY 行，请检查 .env 或删除后重试")
+    path.write_text(new_text, encoding="utf-8")
+    print("JWT_SECRET_KEY 已写入 .env")
 PY
 python -m alembic upgrade head
 python -m scripts.seed_demo_user
@@ -63,7 +66,7 @@ uvicorn app.main:app --reload --port 8100
 
 健康检查：<http://localhost:8100/api/health>
 
-说明：本项目本地开发统一使用 **8100**（本机 Windows 保留了 7997–8096 端口段，8000 不可用），前端 Vite 的 `/api` 代理已指向该端口。如需改用其他端口，请同步调整 `uvicorn` 启动端口与 `frontend/vite.config.ts` 的代理目标；若修改前端端口，还需同步 `backend/.env` 的 `CORS_ORIGINS` 与 `frontend/playwright.config.ts` 的 `baseURL`。
+说明：本项目本地开发统一使用 **8100**（本机 Windows 保留了 7997–8096 端口段，8000 不可用），前端 Vite 的 `/api` 代理已指向该端口。如需改用其他端口，请同步调整 `uvicorn` 启动端口与 `frontend/vite.config.ts` 的代理目标；若修改前端端口，还需同步 `frontend/vite.config.ts` 的 `server.port`、`backend/.env` 的 `CORS_ORIGINS`，以及 `frontend/playwright.config.ts` 的 `baseURL` 与 `webServer.url`。
 
 ### 3. 启动前端
 
@@ -78,6 +81,8 @@ npm run dev
 ## 测试
 
 以下测试命令请新开终端，并从仓库根目录开始执行。
+
+macOS/Linux 请将 `.venv/Scripts/activate` 换成 `.venv/bin/activate`。
 
 后端（需要 PostgreSQL 测试库已启动，本项目使用 Docker 的 `shop_test`）：
 
@@ -99,9 +104,26 @@ E2E 会自行启动 Vite，请先停止前端 dev server 并确保 5173 端口�
 
 ## 停止与重置
 
-- 停止后端 / 前端：在对应终端按 `Ctrl+C`。
-- 停止数据库：`cd deploy && docker compose -f docker-compose.dev.yml down`。
-- 重置演示数据：`cd deploy && docker compose -f docker-compose.dev.yml down -v`（会删除本地开发数据），再重新启动数据库、执行 `python -m alembic upgrade head` 与 `python -m scripts.seed_demo_user`。
+停止后端 / 前端：在对应终端按 `Ctrl+C`。
+
+停止数据库：
+
+```bash
+cd deploy
+docker compose -f docker-compose.dev.yml down
+```
+
+重置开发数据库（会删除 Docker 的 pgdata 卷中的本地数据，不影响 `.env` 与 `backend/static/products/`）：
+
+```bash
+cd deploy
+docker compose -f docker-compose.dev.yml down -v
+docker compose -f docker-compose.dev.yml up -d --wait
+cd ../backend
+source .venv/Scripts/activate   # macOS/Linux 用 .venv/bin/activate
+python -m alembic upgrade head
+python -m scripts.seed_demo_user
+```
 
 ## 主要目录
 
