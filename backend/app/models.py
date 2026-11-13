@@ -7,5 +7,21 @@ from app.modules.catalog.models import (  # noqa: F401
     Product,
     ProductSku,
 )
+from app.modules.commerce.models import (  # noqa: F401
+    Address,
+    CartItem,
+    Order,
+    OrderItem,
+)
 
-__all__ = ["User", "Category", "Product", "ProductSku", "Favorite"]
+__all__ = [
+    "User",
+    "Category",
+    "Product",
+    "ProductSku",
+    "Favorite",
+    "Address",
+    "CartItem",
+    "Order",
+    "OrderItem",
+]

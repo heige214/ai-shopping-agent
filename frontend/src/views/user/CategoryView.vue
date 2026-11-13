@@ -5,6 +5,8 @@ import { showToast } from 'vant'
 
 import { fetchProducts } from '@/api/catalog'
 import ProductCard from '@/components/catalog/ProductCard.vue'
+import CartBadge from '@/components/commerce/CartBadge.vue'
+import { useCartStore } from '@/stores/cart'
 import { useCatalogStore } from '@/stores/catalog'
 import type { ProductSort, ProductSummary } from '@/types/catalog'
 import { getErrorMessage } from '@/utils/error'
@@ -12,6 +14,7 @@ import { getErrorMessage } from '@/utils/error'
 const route = useRoute()
 const router = useRouter()
 const catalog = useCatalogStore()
+const cart = useCartStore()
 
 const categoryId = computed(() => Number(route.params.id))
 const category = computed(() => catalog.find(categoryId.value))
@@ -123,6 +126,7 @@ onMounted(async () => {
     return
   }
   await catalog.load()
+  cart.load().catch(() => undefined)
   reload()
 })
 </script>
@@ -137,7 +141,7 @@ onMounted(async () => {
         <h1>{{ headerTitle }}</h1>
         <span v-if="headerSub">{{ headerSub }}</span>
       </div>
-      <span class="header-spacer" />
+      <CartBadge />
     </header>
 
     <div class="filter-bar">
@@ -230,11 +234,6 @@ onMounted(async () => {
   font-size: 9px;
   color: var(--color-text-secondary);
   margin-top: 1px;
-}
-
-.header-spacer {
-  width: 44px;
-  flex: 0 0 auto;
 }
 
 .filter-bar {

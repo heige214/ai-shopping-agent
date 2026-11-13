@@ -10,6 +10,7 @@
 
 - M0 项目骨架：登录 / 注册、双 Tab 空壳、PostgreSQL + Alembic、pytest、Playwright。
 - M1 商品域：4 个一级 + 34 个叶子品类、300 个商品、1108 条 SKU、收藏、分类列表、商品详情与可复用商品发现组件。
+- M2 交易域：购物车、收货地址、订单、模拟支付、客服发货、确认收货；商品详情加购/立即购买已接通，客服端提供已支付订单发货页。
 
 ## 环境要求
 
@@ -61,7 +62,7 @@ else:
     print("JWT_SECRET_KEY 已写入 .env")
 PY
 python -m alembic upgrade head
-python -m scripts.seed_demo_user
+python -m scripts.seed_demo_user   # 同时创建 demo/demo123 与 agent/agent123
 python -m scripts.seed_catalog
 uvicorn app.main:app --reload --port 8100
 ```
@@ -79,6 +80,8 @@ npm run dev
 ```
 
 打开 <http://localhost:5175>，使用演示账号 **demo / demo123** 登录。登录后进入「AI 找货」Tab，可在底部切换到「我的」。
+
+客服账号 **agent / agent123**（role=agent）登录后默认进入桌面端客服工作台 `/agent/orders`，可查看已支付订单并模拟发货。
 
 演示资料：昵称「小鹿」、172cm、75kg、常穿 M 码（E2E 依赖）。
 
@@ -112,7 +115,7 @@ python -m scripts.build_catalog_seed --force
 
 `build` 默认拒绝覆盖已有 JSON；`seed` 按 `product_code` / `sku_code` upsert，重复执行不会重复插入，也不会丢收藏。
 
-前端 E2E（先确保数据库已迁移、演示账号与商品种子已创建、后端已在 8100 端口运行）：
+前端 E2E（先确保数据库已迁移、演示/客服账号与商品种子已创建、后端已在 8100 端口运行）：
 
 ```bash
 cd frontend
@@ -142,7 +145,7 @@ docker compose -f docker-compose.dev.yml up -d --wait
 cd ../backend
 source .venv/Scripts/activate   # macOS/Linux 用 .venv/bin/activate
 python -m alembic upgrade head
-python -m scripts.seed_demo_user
+python -m scripts.seed_demo_user   # demo/demo123 + agent/agent123
 python -m scripts.seed_catalog
 ```
 
@@ -155,11 +158,12 @@ backend/
 │   ├── db/               # engine、Base、session
 │   ├── modules/auth/     # 用户、注册、登录
 │   ├── modules/catalog/  # 品类、商品、SKU、收藏
+│   ├── modules/commerce/ # 购物车、地址、订单、模拟支付/发货
 │   ├── main.py
 │   └── models.py
 ├── alembic/              # 数据库迁移
 ├── seeds/catalog/        # 品类与商品种子 JSON（商品 JSON 由 CSV 生成）
-├── scripts/              # 种子脚本
+├── scripts/              # 种子脚本（演示账号 + 客服账号 + 商品）
 ├── static/products/      # 300 张商品图（gitignored）
 └── tests/                # pytest
 
@@ -167,13 +171,15 @@ frontend/
 ├── src/
 │   ├── api/              # Axios 客户端与接口封装
 │   ├── components/catalog/ # 商品图、商品卡、商品发现面板
+│   ├── components/commerce/ # 购物车角标、地址表单
 │   ├── layouts/          # 双 Tab 布局
-│   ├── router/           # 路由与鉴权守卫
-│   ├── stores/           # Pinia 状态
+│   ├── router/           # 路由与鉴权/角色守卫
+│   ├── stores/           # Pinia 状态（认证、收藏、购物车）
 │   ├── styles/           # 设计变量与全局样式
 │   ├── types/            # TypeScript 类型
-│   ├── utils/            # token、错误提示、格式化、颜色
-│   └── views/user/       # 登录、注册、AI 找货、分类、详情、收藏、我的
+│   ├── utils/            # token、错误提示、格式化、颜色、订单状态
+│   ├── views/user/       # 登录、注册、找货、分类、详情、收藏、购物车、结算、订单、地址、我的
+│   └── views/agent/      # 客服端订单发货
 ├── tests/e2e/            # Playwright 端到端测试
 ├── playwright.config.ts
 └── vite.config.ts
@@ -184,6 +190,6 @@ deploy/                   # 开发数据库 Docker Compose
 ## 说明
 
 - `backend/static/products/` 约 342MB，已在 `.gitignore` 中排除，需单独备份；M1 商品图通过后端 `/static` 挂载、Vite `/static` 代理访问。
-- 演示账号 `demo / demo123` 仅用于本地演示，生产环境必须更换密码。
+- 演示账号 `demo / demo123` 与客服账号 `agent / agent123` 仅用于本地演示，生产环境必须更换密码；客服端接口 `/api/agent/*` 要求 `role ∈ {agent, admin}`。
 - 当前登录态为 7 天 JWT，存 localStorage（仅为简化实现，生产应改用 HttpOnly Cookie）；refresh token 留到后续安全增强。
 - 启动命令、端口、演示账号或 `.env` 配置变更时，请同步更新本 README；以代码和 `.env.example` 为准。

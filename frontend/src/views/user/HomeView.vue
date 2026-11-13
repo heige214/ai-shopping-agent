@@ -1,11 +1,14 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { showToast } from 'vant'
 
 import ProductDiscoveryPanel from '@/components/catalog/ProductDiscoveryPanel.vue'
+import CartBadge from '@/components/commerce/CartBadge.vue'
 import { useAuthStore } from '@/stores/auth'
+import { useCartStore } from '@/stores/cart'
 
 const auth = useAuthStore()
+const cart = useCartStore()
 const displayName = computed(
   () => auth.user?.nickname || auth.user?.username || '',
 )
@@ -15,6 +18,10 @@ const examples = ['找一件蓝色薄衬衫', '200 元以内的运动鞋', '通�
 function handleExample(): void {
   showToast('AI 导购将在 M4 上线')
 }
+
+onMounted(() => {
+  cart.load().catch(() => undefined)
+})
 </script>
 
 <template>
@@ -27,6 +34,7 @@ function handleExample(): void {
           <div class="brand-sub">对话式导购助手</div>
         </div>
       </div>
+      <CartBadge />
     </header>
     <div class="home-body">
       <section class="greeting-card">
@@ -67,7 +75,8 @@ function handleExample(): void {
   background: var(--color-card);
   display: flex;
   align-items: center;
-  padding: 0 16px;
+  justify-content: space-between;
+  padding: 0 8px 0 16px;
   border-bottom: 1px solid var(--color-border);
 }
 

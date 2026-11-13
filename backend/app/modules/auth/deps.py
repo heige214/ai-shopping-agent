@@ -49,3 +49,14 @@ async def get_current_user_optional(
     except InvalidTokenError:
         return None
     return await db.get(User, user_id)
+
+
+async def require_agent(
+    current_user: User = Depends(get_current_user),
+) -> User:
+    """客服端接口守卫：仅 agent/admin 可访问。"""
+    if current_user.role not in ("agent", "admin"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="需要客服权限"
+        )
+    return current_user

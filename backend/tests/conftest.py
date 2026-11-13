@@ -27,10 +27,11 @@ os.environ.setdefault("CORS_ORIGINS", "http://localhost:5175")
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.pool import NullPool
 
 from app.main import app
+from app.modules.catalog.models import Category, Product, ProductSku
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 
@@ -103,3 +104,115 @@ def seeded_catalog(clean_catalog):
     )
     assert result.returncode == 0, result.stderr
     yield
+
+
+@pytest.fixture
+def sample_catalog(clean_catalog):
+    """创建一个最小商品集（2 商品、3 SKU），供交易域测试使用。"""
+    from decimal import Decimal
+
+    async def _create() -> dict:
+        engine = create_async_engine(TEST_DATABASE_URL, poolclass=NullPool)
+        try:
+            async with AsyncSession(engine, expire_on_commit=False) as session:
+                category = Category(
+                    name="测试服装",
+                    slug="test-clothing",
+                    level=1,
+                    sort_order=0,
+                )
+                session.add(category)
+                await session.flush()
+
+                product_a = Product(
+                    product_code="TEST-A",
+                    category_id=category.id,
+                    title="测试衬衫",
+                    price=Decimal("100.00"),
+                    main_image="/static/products/test-a.png",
+                    status="on_sale",
+                    attributes={},
+                    images=[],
+                )
+                product_b = Product(
+                    product_code="TEST-B",
+                    category_id=category.id,
+                    title="测试帽子",
+                    price=Decimal("50.00"),
+                    main_image="/static/products/test-b.png",
+                    status="on_sale",
+                    attributes={},
+                    images=[],
+                )
+                session.add_all([product_a, product_b])
+                await session.flush()
+
+                sku_a = ProductSku(
+                    product_id=product_a.id,
+                    color="蓝色",
+                    size="M",
+                    stock=10,
+                    sku_code="TEST-A-BLUE-M",
+                )
+                sku_a_alt = ProductSku(
+                    product_id=product_a.id,
+                    color="蓝色",
+                    size="L",
+                    stock=3,
+                    sku_code="TEST-A-BLUE-L",
+                )
+                sku_b = ProductSku(
+                    product_id=product_b.id,
+                    color="黑色",
+                    size="均码",
+                    stock=5,
+                    sku_code="TEST-B-BLACK-F",
+                )
+                session.add_all([sku_a, sku_a_alt, sku_b])
+                await session.commit()
+                return {
+                    "category_id": category.id,
+                    "product_a_id": product_a.id,
+                    "product_b_id": product_b.id,
+                    "sku_a_id": sku_a.id,
+                    "sku_a_alt_id": sku_a_alt.id,
+                    "sku_b_id": sku_b.id,
+                }
+        finally:
+            await engine.dispose()
+
+    data = asyncio.run(_create())
+    yield data
+
+
+@pytest.fixture
+def execute_sql():
+    """在测试库执行一条 SQL，用于构造库存/超时等边界状态。"""
+
+    def _execute(query: str, params: dict | None = None) -> None:
+        async def _run() -> None:
+            engine = create_async_engine(TEST_DATABASE_URL, poolclass=NullPool)
+            try:
+                async with engine.begin() as connection:
+                    await connection.execute(text(query), params or {})
+            finally:
+                await engine.dispose()
+
+        asyncio.run(_run())
+
+    return _execute
+
+
+@pytest.fixture
+def agent_token(client, execute_sql):
+    """注册测试用户并把角色改为 agent，返回登录 token。"""
+    username = "agent_test"
+    payload = {"username": username, "password": "secret123"}
+    client.post("/api/auth/register", json=payload)
+    execute_sql(
+        "UPDATE users SET role = 'agent' WHERE username = :username",
+        {"username": username},
+    )
+    response = client.post("/api/auth/login", json=payload)
+    assert response.status_code == 200
+    return response.json()["access_token"]

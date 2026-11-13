@@ -1,4 +1,4 @@
-"""创建或修复演示账号 demo / demo123；重复执行不会重复创建。"""
+"""创建或修复演示账号 demo / demo123 与客服账号 agent / agent123。"""
 
 import asyncio
 
@@ -19,29 +19,42 @@ DEMO_PROFILE = {
     "usual_size": "M",
 }
 
+AGENT_USERNAME = "agent"
+AGENT_PASSWORD = "agent123"
+AGENT_PROFILE = {
+    "nickname": "客服小助手",
+    "role": "agent",
+}
 
-async def seed_demo_user() -> None:
+
+async def _seed_account(
+    username: str, password: str, profile: dict, label: str
+) -> None:
     async with AsyncSessionLocal() as session:
         existing = await session.scalar(
-            select(User).where(User.username == DEMO_USERNAME)
+            select(User).where(User.username == username)
         )
         if existing is not None:
-            if verify_password(DEMO_PASSWORD, existing.password_hash):
-                print("演示账号已存在，跳过")
+            profile_matches = all(
+                getattr(existing, field) == value
+                for field, value in profile.items()
+            )
+            if verify_password(password, existing.password_hash) and profile_matches:
+                print(f"{label}已存在，跳过")
                 return
-            # 已有同名账号但密码不是 demo123，重置为演示账号，避免验收登录失败
-            existing.password_hash = hash_password(DEMO_PASSWORD)
-            for field, value in DEMO_PROFILE.items():
+            # 已有同名账号但密码或资料不符，重置为演示账号，避免验收登录失败
+            existing.password_hash = hash_password(password)
+            for field, value in profile.items():
                 setattr(existing, field, value)
             await session.commit()
-            print("演示账号已存在，已重置密码与资料")
+            print(f"{label}已存在，已重置密码与资料")
             return
 
         session.add(
             User(
-                username=DEMO_USERNAME,
-                password_hash=hash_password(DEMO_PASSWORD),
-                **DEMO_PROFILE,
+                username=username,
+                password_hash=hash_password(password),
+                **profile,
             )
         )
         try:
@@ -49,14 +62,23 @@ async def seed_demo_user() -> None:
         except IntegrityError:
             # 并发执行时由唯一索引兜底，另一个进程已经创建成功
             await session.rollback()
-            print("演示账号已存在，跳过")
+            print(f"{label}已存在，跳过")
             return
-        print("已创建演示账号 demo / demo123")
+        print(f"已创建{label} {username} / {password}")
+
+
+async def seed_demo_user() -> None:
+    await _seed_account(DEMO_USERNAME, DEMO_PASSWORD, DEMO_PROFILE, "演示账号")
+
+
+async def seed_agent_user() -> None:
+    await _seed_account(AGENT_USERNAME, AGENT_PASSWORD, AGENT_PROFILE, "客服账号")
 
 
 async def main() -> None:
     try:
         await seed_demo_user()
+        await seed_agent_user()
     finally:
         await engine.dispose()
 

@@ -5,8 +5,11 @@ import { showToast } from 'vant'
 
 import { fetchProduct } from '@/api/catalog'
 import ProductImage from '@/components/catalog/ProductImage.vue'
+import CartBadge from '@/components/commerce/CartBadge.vue'
+import { useCartStore } from '@/stores/cart'
 import { useFavoritesStore } from '@/stores/favorites'
 import type { ProductDetail, ProductSku, SizeChartRow } from '@/types/catalog'
+import type { CartItem } from '@/types/commerce'
 import { colorHex } from '@/utils/colors'
 import { getErrorMessage } from '@/utils/error'
 import { formatAttributeValue, formatPrice, formatRange } from '@/utils/format'
@@ -14,6 +17,7 @@ import { formatAttributeValue, formatPrice, formatRange } from '@/utils/format'
 const route = useRoute()
 const router = useRouter()
 const favorites = useFavoritesStore()
+const cart = useCartStore()
 
 const product = ref<ProductDetail | null>(null)
 const loading = ref(true)
@@ -22,6 +26,7 @@ const selectedColor = ref('')
 const selectedSize = ref('')
 const favorited = ref(false)
 const showSizeChart = ref(false)
+const adding = ref(false)
 
 const colors = computed(() => {
   const seen = new Set<string>()
@@ -132,6 +137,40 @@ function placeholder(message: string): void {
   showToast(message)
 }
 
+async function addToCart(): Promise<CartItem | null> {
+  const sku = selectedSku.value
+  if (!sku) {
+    showToast('请选择尺码')
+    return null
+  }
+  if (sku.stock <= 0) {
+    showToast('当前尺码缺货')
+    return null
+  }
+  if (adding.value) {
+    return null
+  }
+
+  adding.value = true
+  try {
+    const item = await cart.add(sku.id, 1)
+    showToast('已加入购物车')
+    return item
+  } catch (error) {
+    showToast(getErrorMessage(error))
+    return null
+  } finally {
+    adding.value = false
+  }
+}
+
+async function buyNow(): Promise<void> {
+  const item = await addToCart()
+  if (item) {
+    await router.push(`/checkout?items=${item.id}`)
+  }
+}
+
 async function loadFavoriteState(id: number): Promise<void> {
   try {
     await favorites.load()
@@ -168,7 +207,10 @@ watch(selectedColor, () => {
   }
 })
 
-onMounted(loadProduct)
+onMounted(() => {
+  cart.load().catch(() => undefined)
+  void loadProduct()
+})
 </script>
 
 <template>
@@ -178,14 +220,7 @@ onMounted(loadProduct)
         <van-icon name="arrow-left" size="18" />
       </button>
       <span class="header-title">商品详情</span>
-      <button
-        type="button"
-        class="icon-button"
-        aria-label="购物车"
-        @click="placeholder('购物车将在 M2 上线')"
-      >
-        <van-icon name="cart-o" size="18" />
-      </button>
+      <CartBadge />
     </header>
 
     <div v-if="loading" class="state-panel">
@@ -308,14 +343,16 @@ onMounted(loadProduct)
         <button
           type="button"
           class="bottom-button ghost"
-          @click="placeholder('购物车将在 M2 上线')"
+          :disabled="adding"
+          @click="addToCart"
         >
           加入购物车
         </button>
         <button
           type="button"
           class="bottom-button primary"
-          @click="placeholder('立即购买将在 M2 上线')"
+          :disabled="adding"
+          @click="buyNow"
         >
           立即购买
         </button>
@@ -613,6 +650,10 @@ onMounted(loadProduct)
 .bottom-button.primary {
   background: var(--color-primary-gradient);
   color: #fff;
+}
+
+.bottom-button:disabled {
+  opacity: 0.6;
 }
 
 .size-chart-popup {
