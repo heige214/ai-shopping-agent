@@ -2,6 +2,8 @@ import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
@@ -35,6 +37,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(auth_router, prefix=settings.api_prefix)
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_error_handler(request, exc: RequestValidationError) -> JSONResponse:
+    """校验失败时不回显用户提交值，避免密码出现在响应或日志中。"""
+    errors = []
+    for error in exc.errors():
+        error = dict(error)
+        error.pop("input", None)
+        errors.append(error)
+    return JSONResponse(status_code=422, content={"detail": jsonable_encoder(errors)})
 
 
 @app.get(f"{settings.api_prefix}/health")

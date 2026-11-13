@@ -23,10 +23,13 @@ class RegisterRequest(BaseModel):
     @field_validator("nickname", mode="before")
     @classmethod
     def blank_nickname_to_none(cls, value: object) -> object:
-        """空白昵称按未填写处理。"""
+        """空白昵称按未填写处理；拒绝控制字符，避免数据库编码错误。"""
         if isinstance(value, str):
             value = value.strip()
-            return value or None
+            if not value:
+                return None
+            if any(ord(char) < 32 or ord(char) == 127 for char in value):
+                raise ValueError("昵称不能包含控制字符")
         return value
 
     @field_validator("password")
@@ -34,7 +37,7 @@ class RegisterRequest(BaseModel):
     def validate_password_bytes(cls, value: str) -> str:
         """bcrypt 只支持 72 字节以内的密码。"""
         if len(value.encode("utf-8")) > BCRYPT_MAX_BYTES:
-            raise ValueError("密码不能超过 72 字节")
+            raise ValueError(f"密码不能超过 {BCRYPT_MAX_BYTES} 字节")
         return value
 
 
