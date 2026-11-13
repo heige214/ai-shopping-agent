@@ -12,7 +12,7 @@
 |---|---|---|---|
 | M0 | 项目骨架：配置、DB、认证、前端壳、测试基线 | 已完成 | m0 |
 | M1 | 商品域 + 种子数据 + 商品详情 | 已完成 | m1-product-catalog |
-| M2 | 购物车、地址、订单、模拟支付/发货 | 未开始 | — |
+| M2 | 购物车、地址、订单、模拟支付/发货 | 已完成 | m2 |
 | M3 | 知识库 + RAG 商品客服 | 未开始 | — |
 | M4 | 导购聊天、意图槽位、澄清、尺码 | 未开始 | — |
 | M5 | 图片理解、语音、AI 加购 | 未开始 | — |
@@ -30,6 +30,41 @@
 ## 模块记录
 
 <!-- 每完成一个模块，把记录加在这里的最上面；第一条从 M0 开始。 -->
+
+## 2026-11-13 · M2 交易域（购物车 / 地址 / 订单 / 模拟支付发货收货）
+
+- 状态：已完成
+- 本次目标：在 M1 商品域之上打通「加购 → 购物车 → 结算 → 下单 → 支付 → 客服发货 → 确认收货」闭环。
+- 完成内容：
+  - 后端：新增 `addresses` / `cart_items` / `orders` / `order_items` 四表与 `20261113_0003_create_commerce` 迁移；购物车 CRUD（同 SKU 累加、超库存 409、勾选/数量/删除）；地址 CRUD（首个地址自动默认、默认唯一、删除默认后自动补选、跨用户 403）；下单事务内 `SELECT FOR UPDATE OF product_skus` 锁 SKU、校验库存、扣减、写地址/商品快照、删除已结算购物车项；订单列表/详情/支付/取消/确认收货；客服端 `/api/agent/orders` 已支付列表与模拟发货，`/api/agent/*` 要求 `role ∈ {agent, admin}`。
+  - 规则：金额内部 Decimal、DTO float；支付幂等且首次支付才累加 `products.sales_count`；取消/超时恢复库存且只恢复一次；`expires_at` 15 分钟，列表/详情/支付惰性扫描 + lifespan 内每分钟兜底扫描；支付/取消/发货/收货状态机 409；中文错误提示。
+  - 种子：`seed_demo_user.py` 同时创建 demo/demo123 与客服 agent/agent123（role=agent），重复执行幂等、密码/角色错误时修复。
+  - 前端：`/cart`、`/checkout`、`/orders`、`/orders/:id`、`/addresses`、`/agent/orders`；商品详情加购与立即购买真实调用；首页/分类/详情购物车角标；我的页订单/地址入口与四个订单状态快捷入口；客服端桌面订单表格与角色守卫；客服登录默认跳 `/agent/orders`。
+  - 测试：后端新增 34 项（schema、购物车、地址越权、订单快照/库存回滚、支付幂等、取消/超时恢复、发货/收货状态机、客服角色守卫、库存 1 并发下单只成功一单）；前端 build 通过；Playwright 新增 2 条（完整交易链路、普通用户访问客服端被带回首页），M0/M1 E2E 不回归。
+- 改动文件 / 目录：
+  - `backend/app/modules/commerce/`、`backend/app/modules/auth/deps.py`、`backend/app/models.py`、`backend/app/main.py`
+  - `backend/alembic/versions/20261113_0003_create_commerce.py`
+  - `backend/scripts/seed_demo_user.py`
+  - `backend/tests/conftest.py`、`backend/tests/test_commerce_schema.py`、`test_cart_api.py`、`test_address_api.py`、`test_order_api.py`
+  - `frontend/src/types/commerce.ts`、`frontend/src/api/commerce.ts`、`frontend/src/stores/cart.ts`、`frontend/src/utils/commerce.ts`
+  - `frontend/src/components/commerce/`、`frontend/src/views/user/{Cart,Checkout,Orders,OrderDetail,Addresses}View.vue`、`frontend/src/views/agent/AgentOrdersView.vue`
+  - `frontend/src/router/index.ts`、`frontend/src/main.ts`、`frontend/src/views/user/{Home,Category,ProductDetail,Me,Login}View.vue`
+  - `frontend/tests/e2e/commerce.spec.ts`
+  - `README.md`、`docs/superpowers/plans/2026-11-13-m2-commerce.md`
+- DB 迁移：`20261113_0003_create_commerce`
+- 新增环境变量：无
+- 测试与验收：
+  - 命令：`cd backend && source .venv/Scripts/activate && python -m pytest -q`；`cd frontend && npm run build`；`cd frontend && npm run test:e2e`
+  - 结果：后端 `104 passed`（M0/M1 原 70 项 + 新增 34 项，79.5s）；前端构建成功（vue-tsc 无报错，Vite 428 modules）；E2E `5 passed`（31.1s，含完整交易链路）。
+- 遗留问题：
+  - [后续] 支付/发货为模拟，未实现真实支付、退款、售后、物流、发票。
+  - [后续] 超时扫描固定 60 秒、每次最多 100 单，未做成可配置；演示环境够用。
+  - [后续] 购物车无批量勾选接口，前端全选逐条 PATCH；商品数量大时需优化。
+  - [后续] 客服端目前仅订单发货；队列/会话工作台留 M6。
+  - [备注] E2E 会累积历史订单记录；用例按订单号定位，不影响断言。
+  - [备注] `scripts/seed_demo_user.py` 名称未改，但现在同时创建客服账号，README 已注明。
+- 下一模块依赖：M3 知识库 + RAG 商品客服；可直接复用商品/SKU 种子、订单与用户数据、Axios/Pinia 结构；M3 不改交易域契约。
+- commit：M2 分支 `m2-commerce`，tag `m2`（见 `git log`）
 
 ## 2026-11-13 · M1 商品域 + 种子数据 + 商品详情
 

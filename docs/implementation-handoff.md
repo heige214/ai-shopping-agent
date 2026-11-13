@@ -10,10 +10,11 @@
   - `docs/mockups/screens-agent.png`：客服端队列、会话工作台、知识审核
   - HTML 源文件与 `mockup.css` 在同一目录。
 - 商品图片：`backend/static/products` 共 300 张（4 个一级品类 × 75），鞋靴 75 张已补齐。
-- 前置状态（2026-11-13）：`git` 已初始化；M0、M1 已完成；商品图本地备份尚未执行。
+- 前置状态（2026-11-13）：`git` 已初始化；M0、M1、M2 已完成；商品图本地备份尚未执行。
 - 主项目骨架与商品域已完成：M0 认证/双 Tab/迁移/测试基线；M1 品类/商品/SKU/收藏/分类列表/商品详情/可复用商品发现组件。
+- 交易域已完成（M2）：购物车、地址、订单、模拟支付/取消/确认收货、客服端已支付订单发货；库存扣减/恢复、支付幂等、超时取消、用户数据隔离与 `role ∈ {agent, admin}` 守卫均已落地。
 - 本地开发端口：后端 8100（本机 Windows 保留 7997–8096，8000 不可用），前端 Vite 5175（避开本机其他项目常占用的 5173/5174），`/api` 代理指向 8100。
-- 本地运行：以 `README.md` 的「本地启动」为准（Docker DB 5433、后端 8100、前端 5175、demo/demo123）。
+- 本地运行：以 `README.md` 的「本地启动」为准（Docker DB 5433、后端 8100、前端 5175、demo/demo123；客服 agent/agent123）。
 
 ## 已确认范围
 
@@ -67,7 +68,7 @@
 3. 结束前跑本模块测试 + 相关 E2E；提交 git；更新 `docs/progress.md`（完成项、遗留、下一模块依赖）与 `docs/implementation-handoff.md`（当前状态、下一步）。
 4. 每 2~3 个模块安排一次集成检查，不要留到答辩前。
 
-前置条件：项目已是 git 仓库（分支 `m0-project-skeleton`），继续按每模块一提交的纪律执行；新窗口通过 `git log` 判断上一窗口改了什么。
+前置条件：项目已是 git 仓库（M2 完成于分支 `m2-commerce`，tag `m2`），继续按每模块一提交的纪律执行；新窗口通过 `git log` 判断上一窗口改了什么。
 
 注意：`backend/static/products` 约 342MB，不要直接提交进普通 git。用 `.gitignore` 排除商品图并单独压缩备份，或使用 Git LFS（大文件存储）；代码、文档、种子 JSON 正常提交。
 
@@ -75,12 +76,12 @@
 
 新窗口先读：
 
-- `docs/superpowers/specs/2026-11-11-ai-shopping-agent-design.md`（重点 §7、§8、§10.2、§11.2）
-- `docs/superpowers/plans/2026-11-13-m0-project-skeleton.md`、`docs/superpowers/plans/2026-11-13-m1-product-catalog.md`（已完成，作为基线参考）
-- `README.md`（本地启动、测试、重置步骤）
+- `docs/superpowers/specs/2026-11-11-ai-shopping-agent-design.md`（重点 §8.4、§8.5、§9.3、§10.3、§11.1.4、§15 M3）
+- `docs/superpowers/plans/2026-11-13-m0-project-skeleton.md`、`2026-11-13-m1-product-catalog.md`、`2026-11-13-m2-commerce.md`（已完成，作为基线参考）
+- `README.md`（本地启动、测试、重置步骤、demo/agent 账号）
 - `docs/implementation-handoff.md`
-- `docs/progress.md`（M0、M1 记录）
+- `docs/progress.md`（M0、M1、M2 记录）
 
-然后进入 M2「购物车、地址、订单、模拟支付/发货」：复用 `products` / `product_skus` / `favorites`、Axios 客户端、Pinia 用户态与详情页底部占位按钮。购物车落 `product_skus.id`，需要补库存扣减/恢复与订单状态机；M2 不要改 M0 认证契约和 M1 商品 DTO。
+然后进入 M3「知识库 + RAG 商品客服」：复用 `products` / `product_skus` / `categories`、商品种子、Axios 客户端与 Pinia 用户态；不要改 M0 认证契约、M1 商品 DTO 和 M2 交易契约。M3 需要新建知识文档/切片/审核相关表与检索链路，并接入商品客服页面。
 
-M1 已消费 `backend/static/products` 中 300 张商品图，不再做 AI 生图；M2 加购时校验 SKU 库存即可，不重新生成商品图。
+M1 已消费 `backend/static/products` 中 300 张商品图，不再做 AI 生图；M2 已完成交易闭环，M3 不重新生成商品图，也不改订单状态机。
