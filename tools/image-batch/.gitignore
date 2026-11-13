@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.env
+data/batch_status.json
+data/failed.csv
+data/test_preview.png
+data/*.zip

@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>AI 找货 · 客服端界面样板</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="mockup.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V6a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></symbol>
+  <symbol id="i-truck" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13"/><path d="M16 8h4l3 3v5h-7z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></symbol>
+</svg>
+
+<div class="gallery column">
+
+  <!-- A1 队列 -->
+  <div class="frame wide">
+    <div class="caption">A1 · 客服端 · 排队队列 <span>接入前先看 AI 对话摘要与用户上下文</span></div>
+    <div class="desktop">
+      <div class="d-header">
+        <div class="d-brand"><div class="logo">AI</div>AI 找货 · 客服工作台</div>
+        <div class="d-user">小林 · 客服 <span class="badge green">在线接单</span></div>
+      </div>
+      <div class="d-body">
+        <aside class="d-side">
+          <div class="d-nav active"><svg class="ic"><use href="#i-clock"/></svg>排队队列 <span class="badge" style="margin-left:auto">2</span></div>
+          <div class="d-nav"><svg class="ic"><use href="#i-chat"/></svg>我的会话</div>
+          <div class="d-nav"><svg class="ic"><use href="#i-box"/></svg>订单查询</div>
+          <div class="d-nav"><svg class="ic"><use href="#i-check"/></svg>知识审核 <span class="badge gray" style="margin-left:auto">3</span></div>
+        </aside>
+        <div class="d-main">
+          <div class="d-col list">
+            <div class="d-col-head">等待接入 <span class="badge">2 人排队</span></div>
+            <div class="d-scroll">
+              <div class="ticket active">
+                <div class="t-top"><span>#1024 · 等待 2 分钟</span><span class="badge">等待中</span></div>
+                <div class="t-name">小鹿 · 亚麻衬衫</div>
+                <div class="t-q">“这件衬衫洗了会缩水吗？”</div>
+                <div class="t-bottom"><span>AI 已答 2 轮 · 未解决</span><button class="btn primary small">接入</button></div>
+              </div>
+              <div class="ticket">
+                <div class="t-top"><span>#1025 · 等待 5 分钟</span><span class="badge">等待中</span></div>
+                <div class="t-name">阿哲 · 帆布双肩包</div>
+                <div class="t-q">“能装下 16 寸的笔记本电脑吗？”</div>
+                <div class="t-bottom"><span>AI 已答 1 轮 · 用户要求转人工</span><button class="btn primary small">接入</button></div>
+              </div>
+              <div class="ticket">
+                <div class="t-top"><span>#1026 · 等待 7 分钟</span><span class="badge">等待中</span></div>
+                <div class="t-name">米粒 · 驼色外套</div>
+                <div class="t-q">“这件外套起球吗？可以机洗吗？”</div>
+                <div class="t-bottom"><span>AI 未检索到有效信息</span><button class="btn primary small">接入</button></div>
+              </div>
+            </div>
+          </div>
+          <div class="d-col center">
+            <div class="d-col-head">转人工前对话 <span class="badge gray">只读</span></div>
+            <div class="d-scroll">
+              <div class="d-sys">AI 客服 · 亚麻翻领长袖衬衫 · 蓝色</div>
+              <div class="d-msg"><div class="d-bubble">你好，我是这件商品的 AI 客服。商品参数、尺码、洗护都可以问我。</div></div>
+              <div class="d-msg user"><div class="d-bubble">这件衬衫洗了会缩水吗？</div></div>
+              <div class="d-msg"><div class="d-bubble">亚麻建议 30℃ 以下冷水机洗，反面晾晒，不要高温烘干，正常不会明显缩水。</div></div>
+              <div class="d-msg user"><div class="d-bubble">那普通洗衣机模式可以吗？</div></div>
+              <div class="d-msg"><div class="d-bubble">可以，但建议选轻柔模式并套洗衣袋；不要和深色衣物混洗。</div></div>
+              <div class="d-msg user"><div class="d-bubble">还是想找个人确认一下</div></div>
+              <div class="d-sys">用户点击「转人工」· 2026-11-12 10:24</div>
+            </div>
+          </div>
+          <div class="d-col context">
+            <div class="d-col-head">用户上下文</div>
+            <div class="d-scroll">
+              <div class="context-block">
+                <h4>用户画像</h4>
+                <div class="kv"><span>昵称</span><b>小鹿</b></div>
+                <div class="kv"><span>身高 / 体重</span><b>172cm / 75kg</b></div>
+                <div class="kv"><span>常穿尺码</span><b>M</b></div>
+              </div>
+              <div class="context-block">
+                <h4>当前商品</h4>
+                <div class="kv"><span>商品</span><b>亚麻翻领衬衫</b></div>
+                <div class="kv"><span>颜色 / 尺码</span><b>蓝色 / M</b></div>
+                <div class="kv"><span>价格</span><b>¥169</b></div>
+              </div>
+              <div class="context-block">
+                <h4>AI 摘要（交接用）</h4>
+                <div class="summary-box">用户询问衬衫洗护。AI 已说明亚麻可 30℃ 以下机洗、反面晾晒；用户追问普通模式是否可行，仍希望人工确认。</div>
+              </div>
+              <div class="context-block">
+                <h4>最近订单</h4>
+                <div class="kv"><span>202611100002</span><b>已完成</b></div>
+                <div class="kv"><span>帆布双肩包 ×1</span><b>¥159</b></div>
+              </div>
+              <button class="btn primary block">接入并查看完整会话</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- A2 会话工作台 -->
+  <div class="frame wide">
+    <div class="caption">A2 · 客服端 · 会话工作台 <span>左侧会话、中间聊天、右侧上下文</span></div>
+    <div class="desktop">
+      <div class="d-header">
+        <div class="d-brand"><div class="logo">AI</div>AI 找货 · 客服工作台</div>
+        <div class="d-user">小林 · 客服 <span class="badge green">会话中</span></div>
+      </div>
+      <div class="d-body">
+        <aside class="d-side">
+          <div class="d-nav"><svg class="ic"><use href="#i-clock"/></svg>排队队列 <span class="badge" style="margin-left:auto">2</span></div>
+          <div class="d-nav active"><svg class="ic"><use href="#i-chat"/></svg>我的会话</div>
+          <div class="d-nav"><svg class="ic"><use href="#i-box"/></svg>订单查询</div>
+          <div class="d-nav"><svg class="ic"><use href="#i-check"/></svg>知识审核 <span class="badge gray" style="margin-left:auto">3</span></div>
+        </aside>
+        <div class="d-main">
+          <div class="d-col list" style="width:240px">
+            <div class="d-col-head">我的会话 <span class="badge gray">3</span></div>
+            <div class="d-scroll">
+              <div class="ticket active">
+                <div class="t-top"><span>#1024</span><span class="badge green">进行中</span></div>
+                <div class="t-name">小鹿 · 亚麻衬衫</div>
+                <div class="t-q">“普通洗衣机模式可以吗？”</div>
+                <div class="t-bottom"><span>刚刚</span><span>未读 0</span></div>
+              </div>
+              <div class="ticket">
+                <div class="t-top"><span>#1025</span><span class="badge">等待中</span></div>
+                <div class="t-name">阿哲 · 帆布双肩包</div>
+                <div class="t-q">“能装 16 寸电脑吗？”</div>
+                <div class="t-bottom"><span>5 分钟前</span><span>未读 1</span></div>
+              </div>
+              <div class="ticket">
+                <div class="t-top"><span>#1018</span><span class="badge gray">已结束</span></div>
+                <div class="t-name">米粒 · 驼色外套</div>
+                <div class="t-q">“谢谢，我知道了”</div>
+                <div class="t-bottom"><span>昨天</span><span>已评价</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="d-col center">
+            <div class="d-col-head">
+              <span>小鹿 · 亚麻翻领长袖衬衫</span>
+              <div style="display:flex;gap:6px;align-items:center"><span class="badge green">进行中</span><button class="btn small">结束会话</button></div>
+            </div>
+            <div class="d-scroll">
+              <div class="summary-box" style="margin-bottom:12px">AI 交接摘要：用户询问洗护，AI 已答亚麻可 30℃ 以下机洗；用户追问普通模式是否可行，希望人工确认。</div>
+              <div class="d-sys">客服小林已接入 · 2026-11-12 10:25</div>
+              <div class="d-msg"><div class="d-bubble">你好，我是小林。看到你在问这件衬衫的洗护，我来帮你确认。</div></div>
+              <div class="d-msg user"><div class="d-bubble">对，我平时直接丢洗衣机，普通模式可以吗？</div></div>
+              <div class="d-msg"><div class="d-bubble">可以，选轻柔模式、30℃ 以下，洗完反面晾干就行。不要高温烘干，基本不会缩水。</div></div>
+              <div class="d-msg user"><div class="d-bubble">好的，那我下单了，谢谢</div></div>
+              <div class="d-msg"><div class="d-bubble">不客气，下单后有任何问题都可以再来找我。</div></div>
+            </div>
+            <div class="d-input">
+              <div class="fakeinput">输入回复，Enter 发送…</div>
+              <div class="send"><svg class="ic sm"><use href="#i-send"/></svg></div>
+            </div>
+          </div>
+          <div class="d-col context">
+            <div class="d-col-head">用户与订单</div>
+            <div class="d-scroll">
+              <div class="context-block">
+                <h4>用户画像</h4>
+                <div class="kv"><span>昵称</span><b>小鹿</b></div>
+                <div class="kv"><span>身高 / 体重</span><b>172cm / 75kg</b></div>
+                <div class="kv"><span>常穿尺码</span><b>M</b></div>
+              </div>
+              <div class="context-block">
+                <h4>当前商品</h4>
+                <div class="kv"><span>商品</span><b>亚麻翻领衬衫</b></div>
+                <div class="kv"><span>规格</span><b>蓝色 / M</b></div>
+                <div class="kv"><span>价格</span><b>¥169</b></div>
+              </div>
+              <div class="context-block">
+                <h4>订单</h4>
+                <div class="kv"><span>202611120001</span><b>待发货</b></div>
+                <div class="kv"><span>实付</span><b>¥169.00</b></div>
+                <button class="btn small" style="width:100%;margin-top:6px">查看订单 / 模拟发货</button>
+              </div>
+              <div class="context-block">
+                <h4>会话结束前</h4>
+                <button class="btn ghost small" style="width:100%;margin-bottom:6px">提炼为知识候选</button>
+                <button class="btn small" style="width:100%">结束会话</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- A3 知识审核 -->
+  <div class="frame wide">
+    <div class="caption">A3 · 客服端 · 知识审核 <span>人工确认后才写入知识库</span></div>
+    <div class="desktop">
+      <div class="d-header">
+        <div class="d-brand"><div class="logo">AI</div>AI 找货 · 客服工作台</div>
+        <div class="d-user">小林 · 客服 <span class="badge green">在线接单</span></div>
+      </div>
+      <div class="d-body">
+        <aside class="d-side">
+          <div class="d-nav"><svg class="ic"><use href="#i-clock"/></svg>排队队列 <span class="badge" style="margin-left:auto">2</span></div>
+          <div class="d-nav"><svg class="ic"><use href="#i-chat"/></svg>我的会话</div>
+          <div class="d-nav"><svg class="ic"><use href="#i-box"/></svg>订单查询</div>
+          <div class="d-nav active"><svg class="ic"><use href="#i-check"/></svg>知识审核 <span class="badge gray" style="margin-left:auto">3</span></div>
+        </aside>
+        <div class="d-main" style="display:block;overflow:hidden">
+          <div class="review-head">
+            <h2>知识审核</h2>
+            <div class="filter-tabs"><span class="ftab active">待审核 3</span><span class="ftab">已通过 12</span><span class="ftab">已驳回 2</span></div>
+          </div>
+          <div style="padding:0 16px 10px;font-size:10.5px;color:#8a9097">AI 从客服会话中提炼的 FAQ 与商品字段建议，需人工确认后才会写入知识库 / 商品资料。</div>
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr><th style="width:70px">类型</th><th>候选内容</th><th style="width:70px">置信度</th><th style="width:150px">来源</th><th style="width:90px">提交时间</th><th style="width:120px">操作</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="tag">FAQ</span></td>
+                  <td><div class="q">175cm / 70kg 穿什么码？</div><div class="a">建议 L 码；喜欢宽松可选 XL 码。亚麻衬衫版型偏常规。</div></td>
+                  <td><b style="color:#2f9e5f">0.92</b></td>
+                  <td>工单 #1024 · 小鹿<br><span style="font-size:10px;color:#9aa0a6">客服：小林</span></td>
+                  <td>11-12 10:40</td>
+                  <td><div class="ops"><button class="btn primary small">通过</button><button class="btn small">驳回</button></div></td>
+                </tr>
+                <tr>
+                  <td><span class="tag gray">字段</span></td>
+                  <td><div class="q">fit_notes = 版型偏大一码</div><div class="a">建议写入「亚麻翻领长袖衬衫」的版型说明，供导购与客服引用。</div></td>
+                  <td><b style="color:#d98a2b">0.78</b></td>
+                  <td>工单 #1024 · 小鹿<br><span style="font-size:10px;color:#9aa0a6">客服：小林</span></td>
+                  <td>11-12 10:41</td>
+                  <td><div class="ops"><button class="btn primary small">通过</button><button class="btn small">驳回</button></div></td>
+                </tr>
+                <tr>
+                  <td><span class="tag">FAQ</span></td>
+                  <td><div class="q">真丝连衣裙可以机洗吗？</div><div class="a">建议手洗或干洗，不要机洗；水温不超过 30℃。</div></td>
+                  <td><b style="color:#d98a2b">0.65</b></td>
+                  <td>工单 #1018 · 米粒<br><span style="font-size:10px;color:#9aa0a6">客服：小林</span></td>
+                  <td>11-11 16:20</td>
+                  <td><div class="ops"><button class="btn primary small">通过</button><button class="btn small">驳回</button></div></td>
+                </tr>
+                <tr>
+                  <td><span class="tag gray">字段</span></td>
+                  <td><div class="q">capacity_laptop = 16 英寸</div><div class="a">建议写入「大容量帆布双肩包」的容量属性。</div></td>
+                  <td><b style="color:#2f9e5f">0.88</b></td>
+                  <td>工单 #1025 · 阿哲<br><span style="font-size:10px;color:#9aa0a6">客服：小林</span></td>
+                  <td>11-12 10:32</td>
+                  <td><div class="ops"><button class="btn primary small">通过</button><button class="btn small">驳回</button></div></td>
+                </tr>
+                <tr>
+                  <td><span class="tag">FAQ</span></td>
+                  <td><div class="q">外套起球可以退换吗？</div><div class="a">非质量问题不支持退换；起球可用毛球修剪器处理。</div></td>
+                  <td><b style="color:#8a9097">0.52</b></td>
+                  <td>工单 #1018 · 米粒<br><span style="font-size:10px;color:#9aa0a6">客服：小林</span></td>
+                  <td>11-11 16:25</td>
+                  <td><div class="ops"><button class="btn primary small">通过</button><button class="btn small">驳回</button></div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="padding:12px 16px;font-size:10.5px;color:#9aa0a6">通过后：FAQ 写入向量知识库；字段建议进入商品资料并记录修改历史。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

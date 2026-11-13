@@ -1,0 +1,26 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+backend/.env
+backend/app.db
+
+# Node
+node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/test-results/
+frontend/playwright-report/
+
+# 商品图与上传文件：体积大，单独备份，不进 git
+backend/static/products/
+backend/static/*.png
+backend/uploads/
+
+# 工具与本地文件
+.playwright-mcp/
+*.log
+.DS_Store
+.idea/
+.vscode/

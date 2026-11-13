@@ -1,0 +1,584 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>AI 找货 · 用户端界面样板</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="mockup.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></symbol>
+  <symbol id="i-cart" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.6 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 17v4"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V6a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 21v-7"/><path d="M4 10V3"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M20 21v-5"/><path d="M20 12V3"/><path d="M1 14h6"/><path d="M9 8h6"/><path d="M17 16h6"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8z"/></symbol>
+  <symbol id="i-headset" viewBox="0 0 24 24"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3z"/><path d="M3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-truck" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13"/><path d="M16 8h4l3 3v5h-7z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/></symbol>
+  <symbol id="i-location" viewBox="0 0 24 24"><path d="M21 10c0 7-9 12-9 12S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+</svg>
+
+<div class="gallery" id="part1">
+
+  <!-- 01 登录 -->
+  <div class="frame">
+    <div class="caption">01 · 登录 / 注册 <span>进入即登录，演示账号</span></div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span>5G ▮▮▮</span></div>
+      <div class="login-wrap">
+        <div class="login-logo">AI</div>
+        <h2>AI 找货</h2>
+        <p class="login-sub">说出你想找的，AI 帮你挑</p>
+        <div class="field">用户名</div>
+        <div class="field">密码</div>
+        <button class="btn primary block">登录</button>
+        <div style="height:9px"></div>
+        <button class="btn ghost block">注册新账号</button>
+        <p class="login-hint">演示账号：demo / demo123</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 02 导购空状态 -->
+  <div class="frame">
+    <div class="caption">02 · AI 导购 · 空状态 <span>默认首页，发现入口在这里</span></div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span>5G ▮▮▮</span></div>
+      <header class="header">
+        <div class="brand">
+          <div class="logo">AI</div>
+          <div><div class="title">AI 找货</div><div class="sub">对话式导购助手</div></div>
+        </div>
+        <div class="cart-btn"><svg class="ic"><use href="#i-cart"/></svg></div>
+      </header>
+      <main class="scroll">
+        <div class="ai-row">
+          <div class="avatar">AI</div>
+          <div class="bubble">你好，我是你的导购助手。说说你想找什么，我帮你挑合适的款。</div>
+        </div>
+        <div class="profile-pill">已读取身材档案 <b>172cm / 75kg</b></div>
+
+        <div class="section-title"><h3>试试这样问</h3><span>点一下直接发送</span></div>
+        <div class="chips">
+          <span class="chip hot">找一件蓝色薄衬衫</span>
+          <span class="chip">200 元以内的运动鞋</span>
+          <span class="chip">通勤连衣裙</span>
+        </div>
+
+        <div class="section-title"><h3>按品类逛逛</h3><span></span></div>
+        <div class="cats">
+          <div class="cat"><b>👕</b>服装</div>
+          <div class="cat"><b>👟</b>鞋靴</div>
+          <div class="cat"><b>👜</b>箱包</div>
+          <div class="cat"><b>🧢</b>配饰</div>
+        </div>
+
+        <div class="section-title"><h3>大家都在看</h3><span>换一批</span></div>
+        <div class="grid2">
+          <div class="pcard">
+            <div class="pic"><span class="pin">AI 推荐</span><img src="../../backend/static/products/C007_蓝色.png" alt="蓝色亚麻衬衫"></div>
+            <div class="pinfo"><div class="pname">亚麻翻领长袖衬衫 · 蓝色</div><div class="pmeta"><span class="price"><small>¥</small>169</span><span class="sales">已售 320</span></div></div>
+          </div>
+          <div class="pcard">
+            <div class="pic"><span class="pin">AI 推荐</span><img src="../../backend/static/products/C041_驼色.png" alt="驼色外套"></div>
+            <div class="pinfo"><div class="pname">羊毛混纺中长外套 · 驼色</div><div class="pmeta"><span class="price"><small>¥</small>399</span><span class="sales">已售 156</span></div></div>
+          </div>
+          <div class="pcard">
+            <div class="pic"><img src="../../backend/static/products/B001_黑色.png" alt="黑色双肩包"></div>
+            <div class="pinfo"><div class="pname">大容量帆布双肩包 · 黑色</div><div class="pmeta"><span class="price"><small>¥</small>159</span><span class="sales">已售 412</span></div></div>
+          </div>
+          <div class="pcard">
+            <div class="pic"><img src="../../backend/static/products/A006_卡其.png" alt="卡其棒球帽"></div>
+            <div class="pinfo"><div class="pname">可调节棒球帽 · 卡其</div><div class="pmeta"><span class="price"><small>¥</small>59</span><span class="sales">已售 208</span></div></div>
+          </div>
+        </div>
+      </main>
+      <div class="inputbar">
+        <div class="iconbtn"><svg class="ic"><use href="#i-image"/></svg></div>
+        <div class="iconbtn"><svg class="ic"><use href="#i-mic"/></svg></div>
+        <div class="fakeinput">描述你想要的商品，也可以发图片…</div>
+        <div class="send"><svg class="ic sm"><use href="#i-send"/></svg></div>
+      </div>
+      <nav class="tabbar">
+        <div class="tab active"><svg class="ic"><use href="#i-chat"/></svg><span>AI 找货</span></div>
+        <div class="tab"><svg class="ic"><use href="#i-user"/></svg><span>我的</span></div>
+      </nav>
+    </div>
+  </div>
+
+  <!-- 03 导购对话 -->
+  <div class="frame">
+    <div class="caption">03 · AI 导购 · 对话结果 <span>推荐卡 + 加购确认</span></div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span>5G ▮▮▮</span></div>
+      <header class="header">
+        <div class="brand"><div class="logo">AI</div><div><div class="title">AI 找货</div><div class="sub">正在为你挑选</div></div></div>
+        <div class="cart-btn"><svg class="ic"><use href="#i-cart"/></svg></div>
+      </header>
+      <main class="scroll">
+        <div class="msg-row user"><div class="bubble user">想找一件薄衬衫，蓝色，身高 172，体重 75kg</div></div>
+        <div class="ai-row">
+          <div class="avatar">AI</div>
+          <div class="bubble">按你的条件挑了这件薄款蓝色衬衫，结合身材档案优先推荐 <b>M 码</b>；再配一个通勤包。</div>
+        </div>
+        <div class="hcard">
+          <img src="../../backend/static/products/C007_蓝色.png" alt="蓝色亚麻衬衫">
+          <div class="hinfo">
+            <div class="hname">亚麻翻领长袖衬衫 · 蓝色</div>
+            <div class="tag" style="margin-top:4px">薄款 · 推荐 M 码</div>
+            <div class="hmeta"><span class="price"><small>¥</small>169</span><button class="btn primary small">加购</button></div>
+          </div>
+        </div>
+        <div class="hcard">
+          <img src="../../backend/static/products/B001_黑色.png" alt="黑色帆布双肩包">
+          <div class="hinfo">
+            <div class="hname">大容量帆布双肩包 · 黑色</div>
+            <div class="tag gray" style="margin-top:4px">搭配推荐 · 通勤</div>
+            <div class="hmeta"><span class="price"><small>¥</small>159</span><button class="btn primary small">加购</button></div>
+          </div>
+        </div>
+        <div class="card" style="padding:10px 11px;margin-top:10px;border:1px solid #ffe3d5">
+          <div style="font-size:11.5px;color:#22262a;line-height:1.45">把「亚麻翻领长袖衬衫 · 蓝色 / M 码」加入购物车？</div>
+          <div style="display:flex;gap:7px;margin-top:8px">
+            <button class="btn primary small" style="flex:1">确认加购</button>
+            <button class="btn small" style="flex:1">先看看</button>
+          </div>
+        </div>
+        <div class="ai-row" style="margin-top:10px">
+          <div class="avatar">AI</div>
+          <div class="bubble">还想看更正式一点，还是更休闲一点？</div>
+        </div>
+        <div class="chips" style="margin-left:39px">
+          <span class="chip hot">更正式</span>
+          <span class="chip">更休闲</span>
+          <span class="chip">换颜色</span>
+        </div>
+      </main>
+      <div class="inputbar">
+        <div class="iconbtn"><svg class="ic"><use href="#i-image"/></svg></div>
+        <div class="iconbtn"><svg class="ic"><use href="#i-mic"/></svg></div>
+        <div class="fakeinput">继续说你的需求…</div>
+        <div class="send"><svg class="ic sm"><use href="#i-send"/></svg></div>
+      </div>
+      <nav class="tabbar">
+        <div class="tab active"><svg class="ic"><use href="#i-chat"/></svg><span>AI 找货</span></div>
+        <div class="tab"><svg class="ic"><use href="#i-user"/></svg><span>我的</span></div>
+      </nav>
+    </div>
+  </div>
+
+  <!-- 04 商品详情 -->
+  <div class="frame">
+    <div class="caption">04 · 商品详情 <span>底部栏「客服」是客服唯一入口</span></div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span>5G ▮▮▮</span></div>
+      <header class="header">
+        <div class="h-left"><div class="iconbtn"><svg class="ic"><use href="#i-back"/></svg></div><div class="h-title">商品详情</div></div>
+        <div class="h-right"><div class="iconbtn"><svg class="ic"><use href="#i-cart"/></svg></div></div>
+      </header>
+      <main class="scroll flush">
+        <img class="detail-pic" src="../../backend/static/products/C007_蓝色.png" alt="蓝色亚麻衬衫">
+        <div class="detail-body">
+          <div style="display:flex;align-items:baseline;justify-content:space-between">
+            <span class="price" style="font-size:20px"><small>¥</small>169</span>
+            <span class="sales">已售 320 · 好评 98%</span>
+          </div>
+          <div class="detail-title">亚麻翻领长袖衬衫 · 蓝色</div>
+          <div class="detail-sub">亚麻 100% · 薄款 · 常规版型 · 男款</div>
+          <div class="swatch-row">
+            <span style="font-size:11px;color:#7a8088;width:28px">颜色</span>
+            <span class="swatch active" style="background:#2F5FAF"></span>
+            <span class="swatch" style="background:#F2F2F2"></span>
+            <span class="swatch" style="background:#22262A"></span>
+            <span style="font-size:10.5px;color:#5a6068">蓝色</span>
+          </div>
+          <div class="size-row">
+            <span class="size-chip">S</span>
+            <span class="size-chip active">M<span class="rec">推荐</span></span>
+            <span class="size-chip">L</span>
+            <span class="size-chip">XL</span>
+            <span style="font-size:10px;color:#3b6fd4;align-self:center;white-space:nowrap;margin-left:2px">尺码表</span>
+          </div>
+          <div class="size-tip">根据 <b>172cm / 75kg</b> 建议选 M 码；喜欢宽松可选 L 码。</div>
+          <div style="margin-top:8px">
+            <div class="attr-row"><span>面料</span><span>亚麻 100%</span></div>
+            <div class="attr-row"><span>版型</span><span>常规版型</span></div>
+            <div class="attr-row" style="border-bottom:0"><span>洗护</span><span>30℃ 以下机洗，反面晾晒</span></div>
+          </div>
+        </div>
+      </main>
+      <div class="bottom-bar">
+        <div class="bottom-icon"><svg class="ic"><use href="#i-heart"/></svg>收藏</div>
+        <div class="bottom-icon" style="color:#ff5a1f"><svg class="ic"><use href="#i-headset"/></svg>客服</div>
+        <button class="btn ghost">加入购物车</button>
+        <button class="btn primary">立即购买</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 05 AI 客服 -->
+  <div class="frame">
+    <div class="caption">05 · 商品 AI 客服 <span>知识库引用 + 反馈 + 转人工</span></div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span>5G ▮▮▮</span></div>
+      <header class="header">
+        <div class="h-left"><div class="iconbtn"><svg class="ic"><use href="#i-back"/></svg></div><div><div class="h-title">AI 客服</div><div class="h-sub">亚麻翻领长袖衬衫</div></div></div>
+        <div class="h-right"><span style="font-size:11px;color:#ff5a1f;font-weight:600">转人工</span></div>
+      </header>
+      <main class="scroll">
+        <div class="mini-product">
+          <img src="../../backend/static/products/C007_蓝色.png" alt="蓝色亚麻衬衫">
+          <div><div class="mp-name">亚麻翻领长袖衬衫 · 蓝色</div><div class="mp-sub">¥169 · 已选 M 码</div></div>
+        </div>
+        <div class="ai-row">
+          <div class="avatar">AI</div>
+          <div class="bubble">你好，我是这件商品的 AI 客服。商品参数、尺码、洗护都可以问我。</div>
+        </div>
+        <div class="msg-row user"><div class="bubble user">这件衬衫洗了会缩水吗？</div></div>
+        <div class="ai-row">
+          <div class="avatar">AI</div>
+          <div class="bubble">
+            亚麻面料建议 <b>30℃ 以下冷水机洗</b>，反面晾晒，不要高温烘干。按这个方式洗护，正常不会明显缩水。
+            <div><span class="cite">📄 商品详情</span><span class="cite">📄 洗护指南</span></div>
+          </div>
+        </div>
+        <div class="feedback"><span style="border-color:#ffd2bd;color:#ff5a1f">有帮助 · 1</span><span>没帮助</span></div>
+        <div class="msg-row user" style="margin-top:10px"><div class="bubble user">可以用洗衣机普通模式吗？</div></div>
+        <div class="ai-row">
+          <div class="avatar">AI</div>
+          <div class="bubble">可以，但建议选轻柔模式并套洗衣袋；不要和深色衣物混洗。若仍有疑问，可以转人工。</div>
+        </div>
+        <div class="sys-msg">AI 回答基于商品知识库，仅供参考</div>
+      </main>
+      <div class="inputbar">
+        <div class="iconbtn"><svg class="ic"><use href="#i-image"/></svg></div>
+        <div class="iconbtn"><svg class="ic"><use href="#i-mic"/></svg></div>
+        <div class="fakeinput">问商品问题，也可以发图片…</div>
+        <div class="send"><svg class="ic sm"><use href="#i-send"/></svg></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 05B 知识库未命中 -->
+  <div class="frame">
+    <div class="caption">05B · AI 客服 · 知识库未命中 <span>兜底话术 + 转人工按钮</span></div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span>5G ▮▮▮</span></div>
+      <header class="header">
+        <div class="h-left"><div class="iconbtn"><svg class="ic"><use href="#i-back"/></svg></div><div><div class="h-title">AI 客服</div><div class="h-sub">羊毛混纺中长外套</div></div></div>
+        <div class="h-right"><span style="font-size:11px;color:#ff5a1f;font-weight:600">转人工</span></div>
+      </header>
+      <main class="scroll">
+        <div class="mini-product">
+          <img src="../../backend/static/products/C041_驼色.png" alt="驼色外套">
+          <div><div class="mp-name">羊毛混纺中长外套 · 驼色</div><div class="mp-sub">¥399 · 已选 M 码</div></div>
+        </div>
+        <div class="ai-row">
+          <div class="avatar">AI</div>
+          <div class="bubble">你好，我是这件商品的 AI 客服，有什么可以帮你？</div>
+        </div>
+        <div class="msg-row user"><div class="bubble user">这件外套会起球吗？起球了能退换吗？</div></div>
+        <div class="ai-row">
+          <div class="avatar">AI</div>
+          <div class="bubble" style="border:1px solid #ffe3d5">
+            知识库未能检索出有效信息。
+            <div style="font-size:11px;color:#8a9097;margin-top:5px">你可以转人工，客服会结合商品资料继续帮你确认。</div>
+            <button class="btn primary block" style="margin-top:9px;font-size:11.5px;padding:8px 10px">转人工客服</button>
+          </div>
+        </div>
+        <div class="sys-msg" style="margin-top:12px">你也可以先看看这些相关问题</div>
+        <div class="chips" style="justify-content:center">
+          <span class="chip">洗护方式</span>
+          <span class="chip">尺码建议</span>
+          <span class="chip">发货时间</span>
+        </div>
+        <div class="sys-msg" style="margin-top:14px">转人工后会同步本次对话摘要，无需重复描述</div>
+      </main>
+      <div class="inputbar">
+        <div class="iconbtn"><svg class="ic"><use href="#i-image"/></svg></div>
+        <div class="iconbtn"><svg class="ic"><use href="#i-mic"/></svg></div>
+        <div class="fakeinput">继续问，或者转人工…</div>
+        <div class="send"><svg class="ic sm"><use href="#i-send"/></svg></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 06A 排队等待 -->
+  <div class="frame">
+    <div class="caption">06A · 转人工 · 排队等待 <span>排队位次 + 摘要同步提示</span></div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span>5G ▮▮▮</span></div>
+      <header class="header">
+        <div class="h-left"><div class="iconbtn"><svg class="ic"><use href="#i-back"/></svg></div><div class="h-title">转人工客服</div></div>
+        <div class="h-right"><span style="font-size:11px;color:#9aa0a6">取消</span></div>
+      </header>
+      <main class="scroll">
+        <div class="card" style="padding:26px 18px;text-align:center;margin-top:18px">
+          <div style="width:52px;height:52px;border-radius:50%;background:#fff2ec;color:#ff5a1f;display:flex;align-items:center;justify-content:center;margin:0 auto 12px">
+            <svg class="ic lg"><use href="#i-clock"/></svg>
+          </div>
+          <div style="font-size:15px;font-weight:700;color:#22262a">正在为你转接人工客服</div>
+          <div style="font-size:11px;color:#7a8088;margin-top:6px">当前排队第 <b style="color:#ff5a1f">2</b> 位 · 预计等待 1-2 分钟</div>
+          <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:18px">
+            <span style="font-size:10px;color:#ff5a1f;font-weight:600">已提交</span>
+            <span style="width:24px;height:2px;background:#ffd2bd"></span>
+            <span style="font-size:10px;color:#ff5a1f;font-weight:600">排队中</span>
+            <span style="width:24px;height:2px;background:#eef0f3"></span>
+            <span style="font-size:10px;color:#a0a5ab">客服接入</span>
+          </div>
+          <button class="btn small" style="margin-top:20px;padding:7px 18px">取消排队</button>
+        </div>
+        <div class="summary-box" style="margin-top:14px">已把本次 AI 对话摘要同步给客服：用户在问羊毛外套是否起球、能否退换；AI 知识库未命中。</div>
+        <div class="sys-msg" style="margin-top:14px">客服接入后会在这里继续对话，请保持页面打开</div>
+      </main>
+      <div class="inputbar">
+        <div class="fakeinput" style="color:#c0c4c9">排队中，请稍候…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 06 转人工 -->
+  <div class="frame">
+    <div class="caption">06 · 转人工 · 人工会话 <span>携带 AI 摘要接入</span></div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span>5G ▮▮▮</span></div>
+      <header class="header">
+        <div class="h-left"><div class="iconbtn"><svg class="ic"><use href="#i-back"/></svg></div><div><div class="h-title">人工客服</div><div class="h-sub">小林 · 在线</div></div></div>
+        <div class="h-right"><span style="font-size:11px;color:#9aa0a6">结束</span></div>
+      </header>
+      <main class="scroll">
+        <div class="queue-banner">已接入人工客服 · 本次等待 1 分 12 秒</div>
+        <div class="sys-msg">客服小林已接入，并查看了你与 AI 的对话摘要</div>
+        <div class="ai-row">
+          <div class="avatar" style="background:#4a4f55">林</div>
+          <div class="bubble">你好，我是小林。看到你在问这件衬衫的洗护，我可以帮你确认。</div>
+        </div>
+        <div class="msg-row user"><div class="bubble user">对，我平时直接丢洗衣机，普通模式可以吗？</div></div>
+        <div class="ai-row">
+          <div class="avatar" style="background:#4a4f55">林</div>
+          <div class="bubble">可以，选轻柔模式、30℃ 以下，洗完反面晾干就行。不要高温烘干，基本不会缩水。</div>
+        </div>
+        <div class="msg-row user"><div class="bubble user">好的，那我下单了，谢谢</div></div>
+        <div class="ai-row">
+          <div class="avatar" style="background:#4a4f55">林</div>
+          <div class="bubble">不客气，下单后有任何问题都可以再来找我。</div>
+        </div>
+        <div class="sys-msg">会话将在 30 分钟后自动结束</div>
+      </main>
+      <div class="inputbar">
+        <div class="iconbtn"><svg class="ic"><use href="#i-image"/></svg></div>
+        <div class="fakeinput">给客服发消息…</div>
+        <div class="send"><svg class="ic sm"><use href="#i-send"/></svg></div>
+      </div>
+    </div>
+  </div>
+
+  </div>
+
+  <div class="gallery" id="part2">
+
+  <!-- 07 购物车 -->
+  <div class="frame">
+    <div class="caption">07 · 购物车 <span>多商品勾选与数量</span></div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span>5G ▮▮▮</span></div>
+      <header class="header">
+        <div class="h-left"><div class="iconbtn"><svg class="ic"><use href="#i-back"/></svg></div><div class="h-title">购物车</div><span class="tag gray">2 件</span></div>
+        <div class="h-right"><span style="font-size:11px;color:#5a6068">编辑</span></div>
+      </header>
+      <main class="scroll">
+        <div class="cart-item">
+          <div class="check"><svg class="ic sm" style="width:10px;height:10px"><use href="#i-check"/></svg></div>
+          <img src="../../backend/static/products/C007_蓝色.png" alt="蓝色衬衫">
+          <div class="ci-info">
+            <div class="ci-name">亚麻翻领长袖衬衫 · 蓝色</div>
+            <div class="ci-spec">蓝色 / M 码 · 薄款</div>
+            <div class="ci-bottom"><span class="price" style="font-size:13px"><small>¥</small>169</span><span class="stepper"><span>−</span><b>1</b><span>+</span></span></div>
+          </div>
+        </div>
+        <div class="cart-item">
+          <div class="check"><svg class="ic sm" style="width:10px;height:10px"><use href="#i-check"/></svg></div>
+          <img src="../../backend/static/products/B001_黑色.png" alt="黑色双肩包">
+          <div class="ci-info">
+            <div class="ci-name">大容量帆布双肩包 · 黑色</div>
+            <div class="ci-spec">黑色 / 均码 · 15.6 英寸</div>
+            <div class="ci-bottom"><span class="price" style="font-size:13px"><small>¥</small>159</span><span class="stepper"><span>−</span><b>1</b><span>+</span></span></div>
+          </div>
+        </div>
+        <div class="section-title"><h3>凑单推荐</h3><span>再看一眼</span></div>
+        <div class="hcard" style="margin-top:0">
+          <img src="../../backend/static/products/A006_卡其.png" alt="卡其棒球帽">
+          <div class="hinfo">
+            <div class="hname">可调节棒球帽 · 卡其</div>
+            <div class="hmeta"><span class="price"><small>¥</small>59</span><button class="btn small">加购</button></div>
+          </div>
+        </div>
+        <div style="font-size:10px;color:#a0a5ab;text-align:center;margin-top:14px">演示环境：支付与物流均为模拟</div>
+      </main>
+      <div class="cart-bar">
+        <div class="check" style="margin-top:0"><svg class="ic sm" style="width:10px;height:10px"><use href="#i-check"/></svg></div>
+        <span style="font-size:11px;color:#5a6068">全选</span>
+        <div class="total" style="text-align:right;padding-right:4px">合计 <b>¥328</b></div>
+        <button class="btn primary" style="padding:10px 18px">结算 (2)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 08 结算 -->
+  <div class="frame">
+    <div class="caption">08 · 结算 / 确认订单 <span>地址 + 模拟支付</span></div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span>5G ▮▮▮</span></div>
+      <header class="header">
+        <div class="h-left"><div class="iconbtn"><svg class="ic"><use href="#i-back"/></svg></div><div class="h-title">确认订单</div></div>
+      </header>
+      <main class="scroll">
+        <div class="address">
+          <div class="addr-top"><svg class="ic sm" style="color:#ff5a1f"><use href="#i-location"/></svg>小鹿 · 138****8888 <span class="tag">默认</span></div>
+          <div class="addr-detail">上海市浦东新区世纪大道 100 号 8 栋 1201 室</div>
+        </div>
+        <div class="order-card" style="margin-bottom:10px">
+          <div class="order-head"><span>商品清单</span><span>共 2 件</span></div>
+          <div class="order-item">
+            <img src="../../backend/static/products/C007_蓝色.png" alt="蓝色衬衫">
+            <div style="flex:1"><div class="oi-name">亚麻翻领长袖衬衫 · 蓝色</div><div class="oi-spec">蓝色 / M 码 × 1</div></div>
+            <span class="price" style="font-size:12px"><small>¥</small>169</span>
+          </div>
+          <div class="order-item">
+            <img src="../../backend/static/products/B001_黑色.png" alt="黑色双肩包">
+            <div style="flex:1"><div class="oi-name">大容量帆布双肩包 · 黑色</div><div class="oi-spec">黑色 / 均码 × 1</div></div>
+            <span class="price" style="font-size:12px"><small>¥</small>159</span>
+          </div>
+        </div>
+        <div style="background:#fff;border-radius:12px;padding:4px 12px 8px">
+          <div class="order-line"><span>商品金额</span><span>¥328.00</span></div>
+          <div class="order-line"><span>运费</span><span>¥0.00</span></div>
+          <div class="order-line" style="border-top:1px solid #f3f4f6;margin-top:3px;padding-top:8px"><span>应付合计</span><b>¥328.00</b></div>
+        </div>
+        <div class="pay-option">
+          <div><div style="font-weight:600">模拟支付</div><div style="font-size:9.5px;color:#9aa0a6;margin-top:2px">演示环境，不产生真实扣款</div></div>
+          <div class="dot"></div>
+        </div>
+        <div class="pay-option" style="margin-top:8px">
+          <div><div style="font-weight:600">配送方式</div><div style="font-size:9.5px;color:#9aa0a6;margin-top:2px">模拟快递 · 包邮 · 预计 3 天送达</div></div>
+          <span class="tag gray">模拟</span>
+        </div>
+      </main>
+      <div class="cart-bar">
+        <div class="total">合计 <b>¥328.00</b></div>
+        <button class="btn primary" style="padding:10px 22px">提交订单</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 09 订单 -->
+  <div class="frame">
+    <div class="caption">09 · 我的订单 <span>订单状态 + 模拟发货</span></div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span>5G ▮▮▮</span></div>
+      <header class="header">
+        <div class="h-left"><div class="iconbtn"><svg class="ic"><use href="#i-back"/></svg></div><div class="h-title">我的订单</div></div>
+        <div class="h-right"><svg class="ic" style="color:#6b7076"><use href="#i-headset"/></svg></div>
+      </header>
+      <div class="order-tabs">
+        <div class="order-tab active">全部</div>
+        <div class="order-tab">待付款</div>
+        <div class="order-tab">待发货</div>
+        <div class="order-tab">已完成</div>
+      </div>
+      <main class="scroll">
+        <div class="order-card">
+          <div class="order-head"><span>订单号 202611120001</span><span class="order-status">待发货</span></div>
+          <div class="order-item">
+            <img src="../../backend/static/products/C007_蓝色.png" alt="蓝色衬衫">
+            <div style="flex:1"><div class="oi-name">亚麻翻领长袖衬衫 · 蓝色</div><div class="oi-spec">蓝色 / M 码 × 1</div></div>
+            <span class="price" style="font-size:12px"><small>¥</small>169</span>
+          </div>
+          <div class="order-foot">
+            <span class="sum">实付 <b>¥169.00</b></span>
+            <div class="order-actions"><button class="btn small">查看详情</button><button class="btn small ghost">提醒发货</button></div>
+          </div>
+        </div>
+        <div class="order-card">
+          <div class="order-head"><span>订单号 202611120003</span><span class="order-status">待付款</span></div>
+          <div class="order-item">
+            <img src="../../backend/static/products/A006_卡其.png" alt="卡其棒球帽">
+            <div style="flex:1"><div class="oi-name">可调节棒球帽 · 卡其</div><div class="oi-spec">卡其 / 均码 × 1</div></div>
+            <span class="price" style="font-size:12px"><small>¥</small>59</span>
+          </div>
+          <div class="order-foot">
+            <span class="sum">应付 <b>¥59.00</b></span>
+            <div class="order-actions"><button class="btn small">取消订单</button><button class="btn small primary">去支付</button></div>
+          </div>
+        </div>
+        <div class="order-card">
+          <div class="order-head"><span>订单号 202611100002</span><span class="order-status gray">已完成</span></div>
+          <div class="order-item">
+            <img src="../../backend/static/products/B001_黑色.png" alt="黑色双肩包">
+            <div style="flex:1"><div class="oi-name">大容量帆布双肩包 · 黑色</div><div class="oi-spec">黑色 / 均码 × 1</div></div>
+            <span class="price" style="font-size:12px"><small>¥</small>159</span>
+          </div>
+          <div class="order-foot">
+            <span class="sum">实付 <b>¥159.00</b></span>
+            <div class="order-actions"><button class="btn small">再次购买</button><button class="btn small">查看详情</button></div>
+          </div>
+        </div>
+        <div style="font-size:10px;color:#a0a5ab;text-align:center;margin-top:8px">演示环境：支付与物流均为模拟</div>
+      </main>
+    </div>
+  </div>
+
+  <!-- 10 我的 -->
+  <div class="frame">
+    <div class="caption">10 · 我的 <span>个人中心 / 收藏 / 地址 / 会话</span></div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span>5G ▮▮▮</span></div>
+      <header class="header">
+        <div class="h-left"><div class="h-title">我的</div></div>
+        <div class="h-right"><div class="iconbtn"><svg class="ic"><use href="#i-settings"/></svg></div></div>
+      </header>
+      <main class="scroll">
+        <div class="me-card">
+          <div class="me-avatar">鹿</div>
+          <div style="flex:1">
+            <div class="me-name">小鹿</div>
+            <div class="me-sub">172cm / 75kg · 常穿 M 码</div>
+          </div>
+          <span class="tag">身材档案</span>
+        </div>
+        <div class="order-shortcut">
+          <div class="shortcut"><svg class="ic"><use href="#i-clock"/></svg>待付款</div>
+          <div class="shortcut"><svg class="ic"><use href="#i-box"/></svg>待发货</div>
+          <div class="shortcut"><svg class="ic"><use href="#i-truck"/></svg>待收货</div>
+          <div class="shortcut"><svg class="ic"><use href="#i-check"/></svg>已完成</div>
+        </div>
+        <div class="menu">
+          <div class="menu-item"><svg class="ic"><use href="#i-heart"/></svg>我的收藏<span class="tag gray" style="margin-left:4px">12</span><span class="arrow">›</span></div>
+          <div class="menu-item"><svg class="ic"><use href="#i-location"/></svg>收货地址<span class="arrow">›</span></div>
+          <div class="menu-item"><svg class="ic"><use href="#i-chat"/></svg>导购会话<span class="arrow">›</span></div>
+          <div class="menu-item"><svg class="ic"><use href="#i-headset"/></svg>客服记录<span class="arrow">›</span></div>
+          <div class="menu-item"><svg class="ic"><use href="#i-settings"/></svg>设置<span class="arrow">›</span></div>
+        </div>
+        <div style="font-size:10px;color:#a0a5ab;text-align:center;margin-top:14px">AI 找货 · 毕业设计演示版</div>
+      </main>
+      <nav class="tabbar">
+        <div class="tab"><svg class="ic"><use href="#i-chat"/></svg><span>AI 找货</span></div>
+        <div class="tab active"><svg class="ic"><use href="#i-user"/></svg><span>我的</span></div>
+      </nav>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

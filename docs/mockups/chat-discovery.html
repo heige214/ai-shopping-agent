@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>AI 找货 · 空状态发现入口</title>
+<link rel="icon" href="data:,">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #e9ebef;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: #111;
+  }
+  .phone {
+    width: 390px;
+    height: 844px;
+    background: #f6f7f9;
+    border-radius: 32px;
+    overflow: hidden;
+    box-shadow: 0 24px 60px rgba(0,0,0,.18);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+  .statusbar {
+    height: 26px; padding: 0 20px; display: flex; align-items: center; justify-content: space-between;
+    font-size: 11px; font-weight: 600; background: #fff;
+  }
+  .header {
+    height: 52px; background: #fff; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 16px; border-bottom: 1px solid #eef0f3;
+  }
+  .brand { display: flex; align-items: center; gap: 9px; }
+  .brand .logo {
+    width: 30px; height: 30px; border-radius: 10px;
+    background: linear-gradient(135deg, #ff8a3d, #ff4d2e);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 800; font-size: 12px;
+  }
+  .brand .title { font-size: 16px; font-weight: 700; line-height: 1.1; }
+  .brand .sub { font-size: 10px; color: #9aa0a6; margin-top: 2px; }
+  .header .cart {
+    width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+    border-radius: 50%; background: #f4f5f7; color: #4a4f55;
+  }
+  .scroll { flex: 1; overflow: hidden; padding: 12px 14px 6px; }
+  .ai-row { display: flex; gap: 9px; align-items: flex-start; }
+  .avatar {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: linear-gradient(135deg, #ff8a3d, #ff4d2e);
+    color: #fff; font-size: 10px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; flex: 0 0 auto;
+  }
+  .bubble {
+    background: #fff; border-radius: 4px 14px 14px 14px; padding: 10px 12px;
+    font-size: 13px; line-height: 1.5; color: #2b2f33;
+    box-shadow: 0 1px 2px rgba(0,0,0,.03);
+  }
+  .profile {
+    display: inline-flex; align-items: center; gap: 4px;
+    margin: 7px 0 0 39px; font-size: 10.5px; color: #7a8088;
+    background: #eef1f4; border-radius: 99px; padding: 4px 9px;
+  }
+  .profile b { color: #ff5a1f; font-weight: 600; }
+  .section-title { display: flex; align-items: center; justify-content: space-between; margin: 13px 2px 7px; }
+  .section-title h3 { font-size: 12.5px; margin: 0; color: #3a3f45; font-weight: 700; }
+  .section-title span { font-size: 10.5px; color: #9aa0a6; }
+  .chips { display: flex; gap: 7px; flex-wrap: wrap; }
+  .chip {
+    background: #fff; border: 1px solid #e6e8ec; color: #3a3f45;
+    font-size: 11.5px; padding: 6px 10px; border-radius: 99px; white-space: nowrap;
+  }
+  .chip.hot { border-color: #ffd2bd; color: #ff5a1f; background: #fff7f2; }
+  .cats { display: flex; gap: 8px; }
+  .cat {
+    flex: 1; background: #fff; border-radius: 12px; padding: 7px 0;
+    text-align: center; font-size: 11px; color: #4a4f55; border: 1px solid #eef0f3;
+  }
+  .cat b { display: block; font-size: 15px; margin-bottom: 2px; font-weight: 500; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .card { background: #fff; border-radius: 14px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+  .card .imgwrap { position: relative; height: 104px; background: #f2f3f5; }
+  .card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .tag {
+    position: absolute; left: 7px; top: 7px; background: rgba(255,90,31,.92);
+    color: #fff; font-size: 9px; padding: 2px 6px; border-radius: 6px;
+  }
+  .card .info { padding: 8px 9px 9px; }
+  .card .name { font-size: 11.5px; line-height: 1.35; color: #22262a; height: 31px; overflow: hidden; }
+  .card .meta { display: flex; align-items: baseline; justify-content: space-between; margin-top: 4px; }
+  .price { color: #ff4d2e; font-weight: 700; font-size: 14px; }
+  .price small { font-size: 9px; font-weight: 600; margin-right: 1px; }
+  .sales { font-size: 9px; color: #a0a5ab; }
+  .inputbar {
+    background: #fff; border-top: 1px solid #eef0f3; padding: 8px 11px;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .iconbtn { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; color: #6b7076; }
+  .fakeinput {
+    flex: 1; height: 36px; border-radius: 18px; background: #f2f4f6;
+    display: flex; align-items: center; padding: 0 13px; font-size: 11.5px; color: #9aa0a6;
+  }
+  .send {
+    width: 36px; height: 36px; border-radius: 50%; background: #ff5a1f;
+    display: flex; align-items: center; justify-content: center; color: #fff;
+  }
+  .tabbar { height: 56px; background: #fff; border-top: 1px solid #eef0f3; display: flex; }
+  .tab {
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 1px; font-size: 10px; color: #9aa0a6;
+  }
+  .tab.active { color: #ff5a1f; font-weight: 600; }
+  .tab svg { width: 20px; height: 20px; }
+</style>
+</head>
+<body>
+  <div class="phone">
+    <div class="statusbar"><span>9:41</span><span>5G ▮▮▮</span></div>
+
+    <header class="header">
+      <div class="brand">
+        <div class="logo">AI</div>
+        <div>
+          <div class="title">AI 找货</div>
+          <div class="sub">对话式导购助手</div>
+        </div>
+      </div>
+      <div class="cart">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle>
+          <path d="M1 1h4l2.6 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"></path>
+        </svg>
+      </div>
+    </header>
+
+    <main class="scroll">
+      <div class="ai-row">
+        <div class="avatar">AI</div>
+        <div class="bubble">你好，我是你的导购助手。说说你想找什么，我帮你挑合适的款。</div>
+      </div>
+      <div class="profile">已读取身材档案 <b>172cm / 75kg</b></div>
+
+      <div class="section-title"><h3>试试这样问</h3><span>点一下直接发送</span></div>
+      <div class="chips">
+        <span class="chip hot">找一件蓝色薄衬衫</span>
+        <span class="chip">200 元以内的运动鞋</span>
+        <span class="chip">通勤连衣裙</span>
+      </div>
+
+      <div class="section-title"><h3>按品类逛逛</h3><span></span></div>
+      <div class="cats">
+        <div class="cat"><b>👕</b>服装</div>
+        <div class="cat"><b>👟</b>鞋靴</div>
+        <div class="cat"><b>👜</b>箱包</div>
+        <div class="cat"><b>🧢</b>配饰</div>
+      </div>
+
+      <div class="section-title"><h3>大家都在看</h3><span>换一批</span></div>
+      <div class="grid">
+        <div class="card">
+          <div class="imgwrap"><span class="tag">AI 推荐</span><img src="../../backend/static/products/C007_蓝色.png" alt="蓝色亚麻衬衫"></div>
+          <div class="info">
+            <div class="name">亚麻翻领长袖衬衫 · 蓝色</div>
+            <div class="meta"><span class="price"><small>¥</small>169</span><span class="sales">已售 320</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="imgwrap"><span class="tag">AI 推荐</span><img src="../../backend/static/products/C041_驼色.png" alt="驼色中长外套"></div>
+          <div class="info">
+            <div class="name">羊毛混纺中长外套 · 驼色</div>
+            <div class="meta"><span class="price"><small>¥</small>399</span><span class="sales">已售 156</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="imgwrap"><img src="../../backend/static/products/B001_黑色.png" alt="黑色帆布双肩包"></div>
+          <div class="info">
+            <div class="name">大容量帆布双肩包 · 黑色</div>
+            <div class="meta"><span class="price"><small>¥</small>159</span><span class="sales">已售 412</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="imgwrap"><img src="../../backend/static/products/A006_卡其.png" alt="卡其棒球帽"></div>
+          <div class="info">
+            <div class="name">可调节棒球帽 · 卡其</div>
+            <div class="meta"><span class="price"><small>¥</small>59</span><span class="sales">已售 208</span></div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <div class="inputbar">
+      <div class="iconbtn">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="3"></rect>
+          <circle cx="8.5" cy="8.5" r="1.5"></circle>
+          <path d="M21 15l-5-5L5 21"></path>
+        </svg>
+      </div>
+      <div class="iconbtn">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="2" width="6" height="12" rx="3"></rect>
+          <path d="M5 10a7 7 0 0 0 14 0"></path>
+          <path d="M12 17v4"></path>
+        </svg>
+      </div>
+      <div class="fakeinput">描述你想要的商品，也可以发图片…</div>
+      <div class="send">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 2L11 13"></path><path d="M22 2l-7 20-4-9-9-4 20-7z"></path>
+        </svg>
+      </div>
+    </div>
+
+    <nav class="tabbar">
+      <div class="tab active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V6a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"></path>
+        </svg>
+        <span>AI 找货</span>
+      </div>
+      <div class="tab">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"></path>
+        </svg>
+        <span>我的</span>
+      </div>
+    </nav>
+  </div>
+</body>
+</html>
