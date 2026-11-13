@@ -1,8 +1,19 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+
+import { useAuthStore } from '@/stores/auth'
+
+const auth = useAuthStore()
+const displayName = computed(
+  () => auth.user?.nickname || auth.user?.username || '',
+)
+</script>
+
 <template>
   <div class="page home-page">
     <header class="home-header">
       <div class="brand">
-        <div class="brand-logo">AI</div>
+        <div class="brand-logo" aria-hidden="true">AI</div>
         <div>
           <div class="brand-title">AI 找货</div>
           <div class="brand-sub">对话式导购助手</div>
@@ -11,9 +22,10 @@
     </header>
     <main class="home-body">
       <div class="empty-card">
-        <div class="empty-avatar">AI</div>
-        <h2>AI 导购即将上线</h2>
-        <p>当前为 M0 项目骨架</p>
+        <div class="empty-avatar" aria-hidden="true">AI</div>
+        <h2>你好，{{ displayName }}</h2>
+        <p>AI 导购对话将在 M4 上线</p>
+        <p class="empty-sub">当前为 M0 项目骨架，登录与双 Tab 已就绪</p>
       </div>
     </main>
   </div>
@@ -21,7 +33,8 @@
 
 <style scoped>
 .home-page {
-  min-height: 100vh;
+  min-height: calc(100vh - 56px);
+  min-height: calc(100dvh - 56px);
   background: var(--color-bg);
 }
 
@@ -100,5 +113,10 @@
   font-size: 12px;
   color: var(--color-text-secondary);
   margin: 0;
+}
+
+.empty-sub {
+  margin-top: 4px;
+  color: var(--color-text-tertiary);
 }
 </style>
