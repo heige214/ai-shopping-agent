@@ -15,7 +15,8 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',
+        // 本机 Windows 保留了 7997-8096 端口段，后端使用 8100
+        target: 'http://127.0.0.1:8100',
         changeOrigin: true,
       },
     },
