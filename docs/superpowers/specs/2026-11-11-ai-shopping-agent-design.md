@@ -334,6 +334,7 @@ products 1─N product_field_history
 | 字段 | 类型 | 说明 |
 |---|---|---|
 | id | BIGSERIAL PK | |
+| product_code | VARCHAR(20) UNIQUE NOT NULL | 商品编码，如 C001/S001/B001/A001；种子按此幂等 upsert |
 | category_id | BIGINT FK categories | 叶子品类 |
 | title | VARCHAR(200) NOT NULL | 标题 |
 | description | TEXT | 描述 |
@@ -603,43 +604,50 @@ products 1─N product_field_history
   └─ 手表
 ```
 
-**一级品类公共属性（服装）**：
+**一级品类公共属性（服装）**（实际选项以 `backend/seeds/catalog/categories.json` 为准，下表为节选）：
 
 ```json
 {
   "attributes": [
-    {"key": "color", "label": "颜色", "type": "enum", "options": ["黑色", "白色", "蓝色", "灰色", "卡其"], "filterable": true},
-    {"key": "material", "label": "材质", "type": "enum", "options": ["棉", "麻", "真丝", "聚酯纤维", "羊毛"], "filterable": true},
+    {"key": "color", "label": "颜色", "type": "enum", "options": ["黑色", "白色", "米白", "浅灰", "深灰", "藏青", "蓝色", "浅蓝", "卡其", "棕色", "绿色", "酒红", "驼色", "粉色", "黄色"], "filterable": true},
+    {"key": "material", "label": "材质", "type": "enum", "options": ["亚麻", "抓绒", "棉", "棉混纺", "棉麻", "涤纶", "牛仔", "牛津纺", "真丝", "纯棉", "羊毛", "羊绒混纺", "聚酯纤维", "腈纶", "莫代尔", "锦纶", "雪纺"], "filterable": true},
+    {"key": "fit", "label": "版型", "type": "enum", "options": ["修身", "常规", "宽松", "直筒", "锥形", "A字", "包臀"], "filterable": true},
     {"key": "thickness", "label": "厚薄", "type": "enum", "options": ["薄款", "常规", "加厚"], "filterable": true},
-    {"key": "fit", "label": "版型", "type": "enum", "options": ["修身", "常规", "宽松"], "filterable": true},
-    {"key": "size", "label": "尺码", "type": "enum", "options": ["S", "M", "L", "XL", "XXL"], "filterable": true},
+    {"key": "style", "label": "风格", "type": "enum", "options": ["休闲", "基础", "复古", "度假", "户外", "正式", "运动", "通勤"], "filterable": true},
     {"key": "gender", "label": "适用性别", "type": "enum", "options": ["男", "女", "中性"], "filterable": true},
-    {"key": "season", "label": "季节", "type": "enum", "options": ["春", "夏", "秋", "冬"], "filterable": true}
+    {"key": "season", "label": "季节", "type": "enum", "options": ["春", "夏", "秋", "冬"], "filterable": true},
+    {"key": "size", "label": "尺码", "type": "enum", "options": ["S", "M", "L", "XL", "XXL"], "filterable": true},
+    {"key": "key_features", "label": "设计细节", "type": "tags", "filterable": false}
   ]
 }
 ```
 
-**叶子扩展示例（衬衫）**：
+**叶子扩展示例（衬衫）**（与 CSV 真实 token 对齐）：
 
 ```json
 {
   "attributes": [
-    {"key": "collar_type", "label": "领型", "type": "enum", "options": ["标准领", "立领", "古巴领"], "filterable": true},
-    {"key": "sleeve_length", "label": "袖长", "type": "enum", "options": ["短袖", "长袖"], "filterable": true},
+    {"key": "collar_type", "label": "领型", "type": "enum", "options": ["翻领", "立领"], "filterable": true},
+    {"key": "sleeve_length", "label": "袖长", "type": "enum", "options": ["长袖", "短袖"], "filterable": true},
     {"key": "pattern", "label": "图案", "type": "enum", "options": ["纯色", "条纹", "格纹"], "filterable": true}
   ]
 }
 ```
 
-后端合并规则：从叶子到根依次合并 `attributes`，同 key 以叶子为准。
+后端合并规则：从父级到叶子依次合并 `attributes`，同 key 以叶子为准。
+
+- 34 个叶子 schema 以 `backend/seeds/catalog/categories.json` 为准；一级品类提供公共属性，叶子只扩展 2~3 个可筛选属性；`key_features` 为展示用 tags，不参与筛选。
+- 叶子可筛选属性的选项来自真实 CSV token 与每叶默认值，禁止把每个 `key_feature` token 都做成独立枚举。
 
 ### 8.2 商品与 SKU 数据
 
-- 总量约 300 个商品，4 个一级品类各约 75 个。
-- 每个商品 1~3 个颜色、4~5 个尺码，生成约 3000~5000 条 SKU。
-- 商品属性必须与图片严格一致（颜色、品类、材质），这是检索演示可信度的基础。
+- 总量 300 个商品，4 个一级品类各 75 个。
+- 一商品一图一色：每个商品只有 1 张主图和 1 个颜色，严格对应 `backend/static/products/{product_code}_{color}.png`；不生成无图颜色。
+- 服装/鞋靴每商品 5 个尺码；箱包/配饰按实际 1~4 个尺寸，单尺码商品用“均码”并隐藏尺码选择。
+- 当前种子实际 SKU 约 1100 条（服装 375、鞋靴 375、箱包 209、配饰 149），不再按 3000~5000 估算。
+- 商品属性必须与图片严格一致（颜色、品类、材质），这是检索演示可信度的基础；`key_feature` 作为 `key_features` tags 展示，叶子 schema 只保留 2~3 个可筛选属性。
 - 种子数据用 JSON 文件维护，脚本导入；SKU 由脚本按商品配置批量生成，库存随机 0~50。
-- 每个商品配一份 `size_chart`；服装用身高/体重/胸围，鞋靴用脚长/欧码。
+- 每个服装/鞋靴商品配一份 `size_chart`；服装用身高/体重/胸围/腰围，鞋靴用脚长/欧码。
 
 ### 8.3 商品图片生成
 
@@ -1012,6 +1020,13 @@ GET    /api/favorites
 POST   /api/products/{id}/favorite
 DELETE /api/products/{id}/favorite
 ```
+
+- 列表分页返回 `{items, total, page, page_size}`。
+- `sort` 仅支持 `recommended | price_asc | price_desc`，默认 `recommended`（销量降序）。
+- `category_id` 传一级品类时默认包含其全部叶子品类。
+- `GET /api/products/{id}` 公开；带 Bearer 时返回 `is_favorited`。
+- `POST/DELETE /api/products/{id}/favorite` 幂等，返回 `{favorited: bool}`。
+- 收藏列表 `GET /api/favorites` 需要登录，返回商品摘要数组。
 
 ### 10.3 AI 会话
 

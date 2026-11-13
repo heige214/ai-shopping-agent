@@ -4,6 +4,7 @@ import { useAuthStore } from '@/stores/auth'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
+  scrollBehavior: () => ({ top: 0 }),
   routes: [
     {
       path: '/login',
@@ -16,6 +17,24 @@ const router = createRouter({
       name: 'register',
       component: () => import('@/views/user/RegisterView.vue'),
       meta: { guestOnly: true },
+    },
+    {
+      path: '/category/:id',
+      name: 'category',
+      component: () => import('@/views/user/CategoryView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/product/:id',
+      name: 'product-detail',
+      component: () => import('@/views/user/ProductDetailView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/favorites',
+      name: 'favorites',
+      component: () => import('@/views/user/FavoritesView.vue'),
+      meta: { requiresAuth: true },
     },
     {
       path: '/',

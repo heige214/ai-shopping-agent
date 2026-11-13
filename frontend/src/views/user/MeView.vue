@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { showConfirmDialog } from 'vant'
 
 import { useAuthStore } from '@/stores/auth'
+import { useFavoritesStore } from '@/stores/favorites'
 
 const auth = useAuthStore()
+const favorites = useFavoritesStore()
 const router = useRouter()
 
 const profileSummary = computed(() => {
@@ -25,9 +27,18 @@ async function handleLogout(): Promise<void> {
   } catch {
     return
   }
+  favorites.clear()
   auth.logout()
   await router.replace('/login')
 }
+
+onMounted(async () => {
+  try {
+    await favorites.load()
+  } catch {
+    // 401 由全局拦截器处理；其他错误不阻塞「我的」页
+  }
+})
 </script>
 
 <template>
@@ -48,10 +59,17 @@ async function handleLogout(): Promise<void> {
         </div>
       </section>
 
-      <section class="me-placeholder">
-        <div class="placeholder-title">更多功能将在后续模块上线</div>
-        <p class="placeholder-text">收藏、地址、订单、导购会话</p>
-      </section>
+      <van-cell-group inset class="me-menu">
+        <van-cell
+          title="我的收藏"
+          is-link
+          :value="favorites.items.length ? String(favorites.items.length) : ''"
+          @click="router.push('/favorites')"
+        />
+        <van-cell title="我的订单" value="M2 上线" />
+        <van-cell title="地址管理" value="M2 上线" />
+        <van-cell title="导购会话" value="M4 上线" />
+      </van-cell-group>
 
       <van-button block class="logout-button" @click="handleLogout">
         退出登录
@@ -121,25 +139,10 @@ async function handleLogout(): Promise<void> {
   margin-top: 3px;
 }
 
-.me-placeholder {
-  background: var(--color-card);
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-card);
+.me-menu {
   margin-top: 10px;
-  padding: 20px 14px;
-  text-align: center;
-}
-
-.placeholder-title {
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--color-text);
-}
-
-.placeholder-text {
-  font-size: 11px;
-  color: var(--color-text-secondary);
-  margin: 6px 0 0;
+  overflow: hidden;
+  border-radius: var(--radius-card);
 }
 
 .logout-button {

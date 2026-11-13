@@ -1,18 +1,23 @@
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 
 from app.core.config import settings
 from app.db.session import AsyncSessionLocal, engine
 from app.modules.auth.router import router as auth_router
+from app.modules.catalog.router import router as catalog_router
 
 logger = logging.getLogger(__name__)
+
+STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
 
 @asynccontextmanager
@@ -37,6 +42,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(auth_router, prefix=settings.api_prefix)
+app.include_router(catalog_router, prefix=settings.api_prefix)
+app.mount(
+    "/static",
+    StaticFiles(directory=STATIC_DIR, check_dir=False),
+    name="static",
+)
 
 
 @app.exception_handler(RequestValidationError)
