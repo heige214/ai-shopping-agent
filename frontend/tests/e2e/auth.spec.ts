@@ -16,6 +16,7 @@ test('演示账号登录后看到双 Tab 空壳', async ({ page }) => {
   await page.getByRole('tab', { name: '我的' }).click()
   await expect(page).toHaveURL('/me')
   await expect(page.getByRole('button', { name: '退出登录' })).toBeVisible()
+  await expect(page.getByText('172cm · 75kg · 常穿 M 码')).toBeVisible()
 
   // 回归：从「我的」点「AI 找货」必须能回到首页
   await page.getByRole('tab', { name: 'AI 找货' }).click()
