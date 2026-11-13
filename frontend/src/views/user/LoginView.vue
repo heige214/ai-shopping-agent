@@ -42,6 +42,14 @@ async function handleSubmit(): Promise<void> {
     loading.value = false
   }
 }
+
+function goRegister(): void {
+  const redirect = route.query.redirect
+  router.push({
+    path: '/register',
+    query: typeof redirect === 'string' ? { redirect } : {},
+  })
+}
 </script>
 
 <template>
@@ -56,6 +64,10 @@ async function handleSubmit(): Promise<void> {
         name="username"
         placeholder="用户名"
         autocomplete="username"
+        autocapitalize="off"
+        autocorrect="off"
+        :spellcheck="false"
+        maxlength="50"
         class="login-field"
       />
       <van-field
@@ -64,6 +76,7 @@ async function handleSubmit(): Promise<void> {
         name="password"
         placeholder="密码"
         autocomplete="current-password"
+        maxlength="128"
         class="login-field"
       />
       <van-button
@@ -81,8 +94,9 @@ async function handleSubmit(): Promise<void> {
       block
       plain
       type="primary"
+      :disabled="loading"
       class="register-button"
-      @click="router.push('/register')"
+      @click="goRegister"
     >
       注册新账号
     </van-button>
@@ -158,6 +172,7 @@ async function handleSubmit(): Promise<void> {
   border-radius: 9px;
   font-size: 14px;
   font-weight: 600;
+  border-color: var(--color-primary-border);
 }
 
 .login-hint {

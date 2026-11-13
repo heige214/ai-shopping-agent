@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
 
 import { useAuthStore } from '@/stores/auth'
@@ -8,6 +8,7 @@ import { getErrorMessage } from '@/utils/error'
 
 const auth = useAuthStore()
 const router = useRouter()
+const route = useRoute()
 
 const loading = ref(false)
 const form = reactive({
@@ -21,12 +22,25 @@ async function handleSubmit(): Promise<void> {
   if (loading.value) {
     return
   }
-  if (!form.username.trim() || !form.password) {
+  const username = form.username.trim()
+  if (!username || !form.password) {
     showToast('请填写用户名和密码')
+    return
+  }
+  if (!/^[A-Za-z0-9_]{3,50}$/.test(username)) {
+    showToast('用户名需为 3-50 位字母、数字或下划线')
+    return
+  }
+  if (form.nickname.trim().length > 50) {
+    showToast('昵称不能超过 50 个字符')
     return
   }
   if (form.password.length < 6) {
     showToast('密码至少 6 位')
+    return
+  }
+  if (new TextEncoder().encode(form.password).length > 72) {
+    showToast('密码不能超过 72 字节')
     return
   }
   if (form.password !== form.confirmPassword) {
@@ -37,12 +51,18 @@ async function handleSubmit(): Promise<void> {
   loading.value = true
   try {
     await auth.registerAndLogin({
-      username: form.username.trim(),
+      username,
       password: form.password,
       nickname: form.nickname.trim() || null,
     })
     showToast('注册成功')
-    await router.replace('/')
+    const redirect =
+      typeof route.query.redirect === 'string' &&
+      route.query.redirect.startsWith('/') &&
+      !route.query.redirect.startsWith('//')
+        ? route.query.redirect
+        : '/'
+    await router.replace(redirect)
   } catch (error) {
     showToast(getErrorMessage(error))
   } finally {
@@ -63,12 +83,18 @@ async function handleSubmit(): Promise<void> {
         name="username"
         placeholder="用户名"
         autocomplete="username"
+        autocapitalize="off"
+        autocorrect="off"
+        :spellcheck="false"
+        maxlength="50"
         class="register-field"
       />
       <van-field
         v-model="form.nickname"
         name="nickname"
         placeholder="昵称（可选）"
+        autocomplete="nickname"
+        maxlength="50"
         class="register-field"
       />
       <van-field
@@ -77,6 +103,7 @@ async function handleSubmit(): Promise<void> {
         name="password"
         placeholder="密码"
         autocomplete="new-password"
+        maxlength="128"
         class="register-field"
       />
       <van-field
@@ -85,6 +112,7 @@ async function handleSubmit(): Promise<void> {
         name="confirmPassword"
         placeholder="确认密码"
         autocomplete="new-password"
+        maxlength="128"
         class="register-field"
       />
       <van-button
@@ -102,6 +130,7 @@ async function handleSubmit(): Promise<void> {
       block
       plain
       type="primary"
+      :disabled="loading"
       class="back-button"
       @click="router.push('/login')"
     >
@@ -178,5 +207,6 @@ async function handleSubmit(): Promise<void> {
   border-radius: 9px;
   font-size: 14px;
   font-weight: 600;
+  border-color: var(--color-primary-border);
 }
 </style>
