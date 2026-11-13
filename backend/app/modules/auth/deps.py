@@ -35,3 +35,17 @@ async def get_current_user(
     if user is None:
         raise unauthorized_exception()
     return user
+
+
+async def get_current_user_optional(
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
+    db: AsyncSession = Depends(get_db),
+) -> User | None:
+    """公开接口的可选登录：无 token 或 token 无效时按未登录处理。"""
+    if credentials is None:
+        return None
+    try:
+        user_id = decode_access_token(credentials.credentials)
+    except InvalidTokenError:
+        return None
+    return await db.get(User, user_id)

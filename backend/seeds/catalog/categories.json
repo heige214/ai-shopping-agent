@@ -1,0 +1,2729 @@
+{
+  "version": 1,
+  "categories": [
+    {
+      "slug": "clothing",
+      "name": "服装",
+      "parent_slug": null,
+      "level": 1,
+      "sort_order": 1,
+      "attribute_schema": {
+        "attributes": [
+          {
+            "key": "color",
+            "label": "颜色",
+            "type": "enum",
+            "options": [
+              "黑色",
+              "白色",
+              "米白",
+              "浅灰",
+              "深灰",
+              "藏青",
+              "蓝色",
+              "浅蓝",
+              "卡其",
+              "棕色",
+              "绿色",
+              "酒红",
+              "驼色",
+              "粉色",
+              "黄色"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "material",
+            "label": "材质",
+            "type": "enum",
+            "options": [
+              "纯棉",
+              "亚麻",
+              "棉麻",
+              "真丝",
+              "牛津纺",
+              "棉混纺",
+              "莫代尔",
+              "聚酯纤维",
+              "牛仔",
+              "雪纺",
+              "羊毛",
+              "涤纶",
+              "棉",
+              "锦纶",
+              "腈纶",
+              "羊绒混纺",
+              "抓绒"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "fit",
+            "label": "版型",
+            "type": "enum",
+            "options": [
+              "常规",
+              "宽松",
+              "修身",
+              "锥形",
+              "直筒",
+              "A字",
+              "包臀"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "thickness",
+            "label": "厚薄",
+            "type": "enum",
+            "options": [
+              "薄款",
+              "常规",
+              "加厚"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "style",
+            "label": "风格",
+            "type": "enum",
+            "options": [
+              "休闲",
+              "通勤",
+              "基础",
+              "复古",
+              "运动",
+              "度假",
+              "户外",
+              "正式"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "gender",
+            "label": "适用性别",
+            "type": "enum",
+            "options": [
+              "男",
+              "女",
+              "中性"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "season",
+            "label": "季节",
+            "type": "enum",
+            "options": [
+              "春",
+              "夏",
+              "秋",
+              "冬"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "size",
+            "label": "尺码",
+            "type": "enum",
+            "options": [
+              "S",
+              "M",
+              "L",
+              "XL",
+              "XXL"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "key_features",
+            "label": "设计细节",
+            "type": "tags",
+            "filterable": false
+          }
+        ]
+      },
+      "size_chart_template": {
+        "type": "clothing",
+        "unit": "cm",
+        "rows": [
+          {
+            "size": "S",
+            "height": [
+              155,
+              165
+            ],
+            "weight": [
+              45,
+              55
+            ],
+            "chest": [
+              82,
+              88
+            ],
+            "waist": [
+              68,
+              74
+            ]
+          },
+          {
+            "size": "M",
+            "height": [
+              165,
+              172
+            ],
+            "weight": [
+              55,
+              65
+            ],
+            "chest": [
+              88,
+              94
+            ],
+            "waist": [
+              74,
+              80
+            ]
+          },
+          {
+            "size": "L",
+            "height": [
+              170,
+              178
+            ],
+            "weight": [
+              65,
+              75
+            ],
+            "chest": [
+              94,
+              100
+            ],
+            "waist": [
+              80,
+              86
+            ]
+          },
+          {
+            "size": "XL",
+            "height": [
+              176,
+              184
+            ],
+            "weight": [
+              75,
+              85
+            ],
+            "chest": [
+              100,
+              106
+            ],
+            "waist": [
+              86,
+              92
+            ]
+          },
+          {
+            "size": "XXL",
+            "height": [
+              182,
+              190
+            ],
+            "weight": [
+              85,
+              95
+            ],
+            "chest": [
+              106,
+              112
+            ],
+            "waist": [
+              92,
+              98
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "footwear",
+      "name": "鞋靴",
+      "parent_slug": null,
+      "level": 1,
+      "sort_order": 2,
+      "attribute_schema": {
+        "attributes": [
+          {
+            "key": "color",
+            "label": "颜色",
+            "type": "enum",
+            "options": [
+              "黑色",
+              "白色",
+              "米白",
+              "灰色",
+              "藏青",
+              "棕色",
+              "卡其",
+              "绿色",
+              "酒红",
+              "粉色"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "material",
+            "label": "材质",
+            "type": "enum",
+            "options": [
+              "网布+橡胶",
+              "飞织+EVA",
+              "皮革+橡胶",
+              "网布+EVA",
+              "帆布+橡胶",
+              "绒面+橡胶",
+              "皮革",
+              "漆皮",
+              "绒面",
+              "EVA",
+              "织物",
+              "棉"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "style",
+            "label": "风格",
+            "type": "enum",
+            "options": [
+              "运动",
+              "休闲",
+              "跑步",
+              "通勤",
+              "复古",
+              "正式",
+              "度假",
+              "居家"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "gender",
+            "label": "适用性别",
+            "type": "enum",
+            "options": [
+              "男",
+              "女",
+              "中性"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "size",
+            "label": "尺码",
+            "type": "enum",
+            "options": [
+              "35",
+              "36",
+              "37",
+              "38",
+              "39",
+              "40",
+              "41",
+              "42",
+              "43"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "key_features",
+            "label": "设计细节",
+            "type": "tags",
+            "filterable": false
+          }
+        ]
+      },
+      "size_chart_template": {
+        "type": "shoes",
+        "unit": "mm",
+        "rows": [
+          {
+            "size": "35",
+            "foot_length": [
+              220,
+              225
+            ]
+          },
+          {
+            "size": "36",
+            "foot_length": [
+              225,
+              230
+            ]
+          },
+          {
+            "size": "37",
+            "foot_length": [
+              230,
+              235
+            ]
+          },
+          {
+            "size": "38",
+            "foot_length": [
+              235,
+              240
+            ]
+          },
+          {
+            "size": "39",
+            "foot_length": [
+              240,
+              245
+            ]
+          },
+          {
+            "size": "40",
+            "foot_length": [
+              245,
+              250
+            ]
+          },
+          {
+            "size": "41",
+            "foot_length": [
+              250,
+              255
+            ]
+          },
+          {
+            "size": "42",
+            "foot_length": [
+              255,
+              260
+            ]
+          },
+          {
+            "size": "43",
+            "foot_length": [
+              260,
+              265
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "bags",
+      "name": "箱包",
+      "parent_slug": null,
+      "level": 1,
+      "sort_order": 3,
+      "attribute_schema": {
+        "attributes": [
+          {
+            "key": "color",
+            "label": "颜色",
+            "type": "enum",
+            "options": [
+              "黑色",
+              "棕色",
+              "卡其",
+              "灰色",
+              "藏青",
+              "米白",
+              "酒红",
+              "绿色",
+              "驼色"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "material",
+            "label": "材质",
+            "type": "enum",
+            "options": [
+              "帆布",
+              "尼龙",
+              "聚酯纤维",
+              "皮革",
+              "PU",
+              "聚碳酸酯",
+              "ABS",
+              "铝框"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "style",
+            "label": "风格",
+            "type": "enum",
+            "options": [
+              "休闲",
+              "通勤",
+              "旅行",
+              "正式",
+              "复古",
+              "基础",
+              "商务",
+              "购物",
+              "运动"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "gender",
+            "label": "适用性别",
+            "type": "enum",
+            "options": [
+              "中性",
+              "男",
+              "女"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "size",
+            "label": "尺码",
+            "type": "enum",
+            "options": [
+              "小号",
+              "中号",
+              "大号",
+              "短款",
+              "长款",
+              "20寸",
+              "24寸",
+              "28寸",
+              "均码"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "key_features",
+            "label": "设计细节",
+            "type": "tags",
+            "filterable": false
+          }
+        ]
+      },
+      "size_chart_template": null
+    },
+    {
+      "slug": "accessories",
+      "name": "配饰",
+      "parent_slug": null,
+      "level": 1,
+      "sort_order": 4,
+      "attribute_schema": {
+        "attributes": [
+          {
+            "key": "color",
+            "label": "颜色",
+            "type": "enum",
+            "options": [
+              "黑色",
+              "白色",
+              "米白",
+              "灰色",
+              "棕色",
+              "卡其",
+              "红色",
+              "酒红",
+              "藏青",
+              "绿色"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "material",
+            "label": "材质",
+            "type": "enum",
+            "options": [
+              "纯棉",
+              "羊毛",
+              "涤纶",
+              "草编",
+              "真丝",
+              "羊绒混纺",
+              "棉",
+              "皮革",
+              "PU",
+              "帆布",
+              "棉混纺",
+              "针织",
+              "绒面",
+              "板材",
+              "金属",
+              "TR90",
+              "925银",
+              "合金",
+              "钛钢",
+              "不锈钢",
+              "硅胶"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "style",
+            "label": "风格",
+            "type": "enum",
+            "options": [
+              "休闲",
+              "运动",
+              "度假",
+              "通勤",
+              "复古",
+              "正式",
+              "户外"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "gender",
+            "label": "适用性别",
+            "type": "enum",
+            "options": [
+              "中性",
+              "男",
+              "女"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "size",
+            "label": "尺码",
+            "type": "enum",
+            "options": [
+              "S",
+              "M",
+              "L",
+              "XL",
+              "均码"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "key_features",
+            "label": "设计细节",
+            "type": "tags",
+            "filterable": false
+          }
+        ]
+      },
+      "size_chart_template": null
+    },
+    {
+      "slug": "shirts",
+      "name": "衬衫",
+      "parent_slug": "clothing",
+      "level": 2,
+      "sort_order": 1,
+      "attribute_schema": {
+        "attributes": [
+          {
+            "key": "collar_type",
+            "label": "领型",
+            "type": "enum",
+            "options": [
+              "翻领",
+              "立领"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "shoulder",
+            "label": "肩型",
+            "type": "enum",
+            "options": [
+              "落肩",
+              "常规肩"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "hem",
+            "label": "下摆",
+            "type": "enum",
+            "options": [
+              "弧形",
+              "平直"
+            ],
+            "filterable": true
+          }
+        ]
+      },
+      "attribute_rules": {
+        "collar_type": {
+          "tokens": {
+            "翻领": "翻领"
+          },
+          "default": "立领"
+        },
+        "shoulder": {
+          "tokens": {
+            "落肩": "落肩"
+          },
+          "default": "常规肩"
+        },
+        "hem": {
+          "tokens": {
+            "弧形下摆": "弧形"
+          },
+          "default": "平直"
+        }
+      },
+      "size_chart_template": null
+    },
+    {
+      "slug": "t_shirts",
+      "name": "T恤",
+      "parent_slug": "clothing",
+      "level": 2,
+      "sort_order": 2,
+      "attribute_schema": {
+        "attributes": [
+          {
+            "key": "neckline",
+            "label": "领型",
+            "type": "enum",
+            "options": [
+              "圆领",
+              "V领"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "sleeve_length",
+            "label": "袖长",
+            "type": "enum",
+            "options": [
+              "短袖",
+              "长袖"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "hem",
+            "label": "下摆",
+            "type": "enum",
+            "options": [
+              "开衩",
+              "平直"
+            ],
+            "filterable": true
+          }
+        ]
+      },
+      "attribute_rules": {
+        "neckline": {
+          "tokens": {
+            "圆领": "圆领"
+          },
+          "default": "V领"
+        },
+        "sleeve_length": {
+          "tokens": {
+            "短袖": "短袖"
+          },
+          "default": "长袖"
+        },
+        "hem": {
+          "tokens": {
+            "下摆开衩": "开衩"
+          },
+          "default": "平直"
+        }
+      },
+      "size_chart_template": null
+    },
+    {
+      "slug": "pants",
+      "name": "裤装",
+      "parent_slug": "clothing",
+      "level": 2,
+      "sort_order": 3,
+      "attribute_schema": {
+        "attributes": [
+          {
+            "key": "waist_type",
+            "label": "腰型",
+            "type": "enum",
+            "options": [
+              "高腰",
+              "中腰"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "length",
+            "label": "裤长",
+            "type": "enum",
+            "options": [
+              "九分",
+              "长裤"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "pocket_type",
+            "label": "口袋",
+            "type": "enum",
+            "options": [
+              "斜插袋",
+              "后口袋",
+              "无口袋"
+            ],
+            "filterable": true
+          }
+        ]
+      },
+      "attribute_rules": {
+        "waist_type": {
+          "tokens": {
+            "高腰": "高腰"
+          },
+          "default": "中腰"
+        },
+        "length": {
+          "tokens": {
+            "九分": "九分"
+          },
+          "default": "长裤"
+        },
+        "pocket_type": {
+          "tokens": {
+            "斜插袋": "斜插袋",
+            "后口袋": "后口袋"
+          },
+          "default": "无口袋"
+        }
+      },
+      "size_chart_template": null
+    },
+    {
+      "slug": "dresses",
+      "name": "连衣裙",
+      "parent_slug": "clothing",
+      "level": 2,
+      "sort_order": 4,
+      "attribute_schema": {
+        "attributes": [
+          {
+            "key": "neckline",
+            "label": "领型",
+            "type": "enum",
+            "options": [
+              "V领",
+              "圆领"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "length",
+            "label": "裙长",
+            "type": "enum",
+            "options": [
+              "中长款",
+              "短款"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "waist",
+            "label": "腰型",
+            "type": "enum",
+            "options": [
+              "收腰",
+              "直筒"
+            ],
+            "filterable": true
+          }
+        ]
+      },
+      "attribute_rules": {
+        "neckline": {
+          "tokens": {
+            "V领": "V领"
+          },
+          "default": "圆领"
+        },
+        "length": {
+          "tokens": {
+            "中长款": "中长款"
+          },
+          "default": "短款"
+        },
+        "waist": {
+          "tokens": {
+            "收腰": "收腰"
+          },
+          "default": "直筒"
+        }
+      },
+      "size_chart_template": null
+    },
+    {
+      "slug": "coats",
+      "name": "外套",
+      "parent_slug": "clothing",
+      "level": 2,
+      "sort_order": 5,
+      "attribute_schema": {
+        "attributes": [
+          {
+            "key": "collar_type",
+            "label": "领型",
+            "type": "enum",
+            "options": [
+              "翻领",
+              "立领"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "closure",
+            "label": "门襟",
+            "type": "enum",
+            "options": [
+              "双排扣",
+              "单排扣"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "length",
+            "label": "衣长",
+            "type": "enum",
+            "options": [
+              "中长款",
+              "短款"
+            ],
+            "filterable": true
+          }
+        ]
+      },
+      "attribute_rules": {
+        "collar_type": {
+          "tokens": {
+            "翻领": "翻领"
+          },
+          "default": "立领"
+        },
+        "closure": {
+          "tokens": {
+            "双排扣": "双排扣"
+          },
+          "default": "单排扣"
+        },
+        "length": {
+          "tokens": {
+            "中长款": "中长款"
+          },
+          "default": "短款"
+        }
+      },
+      "size_chart_template": null
+    },
+    {
+      "slug": "knitwear",
+      "name": "针织衫",
+      "parent_slug": "clothing",
+      "level": 2,
+      "sort_order": 6,
+      "attribute_schema": {
+        "attributes": [
+          {
+            "key": "neckline",
+            "label": "领型",
+            "type": "enum",
+            "options": [
+              "圆领",
+              "V领"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "sleeve_length",
+            "label": "袖长",
+            "type": "enum",
+            "options": [
+              "长袖",
+              "短袖"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "pattern",
+            "label": "图案",
+            "type": "enum",
+            "options": [
+              "麻花",
+              "条纹",
+              "纯色"
+            ],
+            "filterable": true
+          }
+        ]
+      },
+      "attribute_rules": {
+        "neckline": {
+          "tokens": {
+            "圆领": "圆领"
+          },
+          "default": "V领"
+        },
+        "sleeve_length": {
+          "tokens": {
+            "长袖": "长袖"
+          },
+          "default": "短袖"
+        },
+        "pattern": {
+          "tokens": {
+            "麻花纹理": "麻花",
+            "撞色条纹": "条纹"
+          },
+          "default": "纯色"
+        }
+      },
+      "size_chart_template": null
+    },
+    {
+      "slug": "hoodies",
+      "name": "卫衣",
+      "parent_slug": "clothing",
+      "level": 2,
+      "sort_order": 7,
+      "attribute_schema": {
+        "attributes": [
+          {
+            "key": "hood",
+            "label": "帽型",
+            "type": "enum",
+            "options": [
+              "连帽",
+              "无帽"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "drawstring",
+            "label": "抽绳",
+            "type": "enum",
+            "options": [
+              "有",
+              "无"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "pocket",
+            "label": "口袋",
+            "type": "enum",
+            "options": [
+              "袋鼠口袋",
+              "无口袋"
+            ],
+            "filterable": true
+          }
+        ]
+      },
+      "attribute_rules": {
+        "hood": {
+          "tokens": {
+            "连帽": "连帽"
+          },
+          "default": "无帽"
+        },
+        "drawstring": {
+          "tokens": {
+            "抽绳": "有"
+          },
+          "default": "无"
+        },
+        "pocket": {
+          "tokens": {
+            "袋鼠口袋": "袋鼠口袋"
+          },
+          "default": "无口袋"
+        }
+      },
+      "size_chart_template": null
+    },
+    {
+      "slug": "skirts",
+      "name": "半身裙",
+      "parent_slug": "clothing",
+      "level": 2,
+      "sort_order": 8,
+      "attribute_schema": {
+        "attributes": [
+          {
+            "key": "waist_type",
+            "label": "腰型",
+            "type": "enum",
+            "options": [
+              "高腰",
+              "中腰"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "length",
+            "label": "裙长",
+            "type": "enum",
+            "options": [
+              "中长款",
+              "短款"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "silhouette",
+            "label": "版型",
+            "type": "enum",
+            "options": [
+              "A字",
+              "直筒"
+            ],
+            "filterable": true
+          }
+        ]
+      },
+      "attribute_rules": {
+        "waist_type": {
+          "tokens": {
+            "高腰": "高腰"
+          },
+          "default": "中腰"
+        },
+        "length": {
+          "tokens": {
+            "中长款": "中长款"
+          },
+          "default": "短款"
+        },
+        "silhouette": {
+          "tokens": {
+            "A字摆": "A字"
+          },
+          "default": "直筒"
+        }
+      },
+      "size_chart_template": null
+    },
+    {
+      "slug": "suits",
+      "name": "西装",
+      "parent_slug": "clothing",
+      "level": 2,
+      "sort_order": 9,
+      "attribute_schema": {
+        "attributes": [
+          {
+            "key": "lapel",
+            "label": "领型",
+            "type": "enum",
+            "options": [
+              "平驳领",
+              "戗驳领"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "closure",
+            "label": "门襟",
+            "type": "enum",
+            "options": [
+              "单排扣",
+              "双排扣"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "back_vent",
+            "label": "后开衩",
+            "type": "enum",
+            "options": [
+              "有",
+              "无"
+            ],
+            "filterable": true
+          }
+        ]
+      },
+      "attribute_rules": {
+        "lapel": {
+          "tokens": {
+            "平驳领": "平驳领"
+          },
+          "default": "戗驳领"
+        },
+        "closure": {
+          "tokens": {
+            "单排扣": "单排扣"
+          },
+          "default": "双排扣"
+        },
+        "back_vent": {
+          "tokens": {
+            "后开衩": "有"
+          },
+          "default": "无"
+        }
+      },
+      "size_chart_template": null
+    },
+    {
+      "slug": "trench_coats",
+      "name": "风衣",
+      "parent_slug": "clothing",
+      "level": 2,
+      "sort_order": 10,
+      "attribute_schema": {
+        "attributes": [
+          {
+            "key": "collar_type",
+            "label": "领型",
+            "type": "enum",
+            "options": [
+              "翻领",
+              "立领"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "closure",
+            "label": "门襟",
+            "type": "enum",
+            "options": [
+              "双排扣",
+              "单排扣"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "length",
+            "label": "衣长",
+            "type": "enum",
+            "options": [
+              "中长款",
+              "短款"
+            ],
+            "filterable": true
+          }
+        ]
+      },
+      "attribute_rules": {
+        "collar_type": {
+          "tokens": {
+            "翻领": "翻领"
+          },
+          "default": "立领"
+        },
+        "closure": {
+          "tokens": {
+            "双排扣": "双排扣"
+          },
+          "default": "单排扣"
+        },
+        "length": {
+          "tokens": {
+            "中长款": "中长款"
+          },
+          "default": "短款"
+        }
+      },
+      "size_chart_template": null
+    },
+    {
+      "slug": "sneakers",
+      "name": "运动鞋",
+      "parent_slug": "footwear",
+      "level": 2,
+      "sort_order": 1,
+      "attribute_schema": {
+        "attributes": [
+          {
+            "key": "closure",
+            "label": "闭合",
+            "type": "enum",
+            "options": [
+              "系带",
+              "一脚蹬"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "sole",
+            "label": "鞋底",
+            "type": "enum",
+            "options": [
+              "厚底",
+              "平底"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "upper",
+            "label": "鞋面",
+            "type": "enum",
+            "options": [
+              "网面",
+              "皮革"
+            ],
+            "filterable": true
+          }
+        ]
+      },
+      "attribute_rules": {
+        "closure": {
+          "tokens": {
+            "系带": "系带"
+          },
+          "default": "一脚蹬"
+        },
+        "sole": {
+          "tokens": {
+            "厚底": "厚底"
+          },
+          "default": "平底"
+        },
+        "upper": {
+          "tokens": {
+            "透气网面": "网面"
+          },
+          "default": "皮革"
+        }
+      },
+      "size_chart_template": null
+    },
+    {
+      "slug": "casual_shoes",
+      "name": "休闲鞋",
+      "parent_slug": "footwear",
+      "level": 2,
+      "sort_order": 2,
+      "attribute_schema": {
+        "attributes": [
+          {
+            "key": "toe_shape",
+            "label": "鞋头",
+            "type": "enum",
+            "options": [
+              "圆头",
+              "尖头"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "sole",
+            "label": "鞋底",
+            "type": "enum",
+            "options": [
+              "软底",
+              "橡胶底"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "lace",
+            "label": "鞋带",
+            "type": "enum",
+            "options": [
+              "撞色",
+              "同色"
+            ],
+            "filterable": true
+          }
+        ]
+      },
+      "attribute_rules": {
+        "toe_shape": {
+          "tokens": {
+            "圆头": "圆头"
+          },
+          "default": "尖头"
+        },
+        "sole": {
+          "tokens": {
+            "软底": "软底"
+          },
+          "default": "橡胶底"
+        },
+        "lace": {
+          "tokens": {
+            "撞色鞋带": "撞色"
+          },
+          "default": "同色"
+        }
+      },
+      "size_chart_template": null
+    },
+    {
+      "slug": "leather_shoes",
+      "name": "皮鞋",
+      "parent_slug": "footwear",
+      "level": 2,
+      "sort_order": 3,
+      "attribute_schema": {
+        "attributes": [
+          {
+            "key": "toe_shape",
+            "label": "鞋头",
+            "type": "enum",
+            "options": [
+              "圆头",
+              "尖头"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "closure",
+            "label": "闭合",
+            "type": "enum",
+            "options": [
+              "系带",
+              "一脚蹬"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "sole",
+            "label": "鞋底",
+            "type": "enum",
+            "options": [
+              "橡胶底",
+              "皮革底"
+            ],
+            "filterable": true
+          }
+        ]
+      },
+      "attribute_rules": {
+        "toe_shape": {
+          "tokens": {
+            "圆头": "圆头"
+          },
+          "default": "尖头"
+        },
+        "closure": {
+          "tokens": {
+            "系带": "系带"
+          },
+          "default": "一脚蹬"
+        },
+        "sole": {
+          "tokens": {
+            "橡胶鞋底": "橡胶底"
+          },
+          "default": "皮革底"
+        }
+      },
+      "size_chart_template": null
+    },
+    {
+      "slug": "boots",
+      "name": "靴子",
+      "parent_slug": "footwear",
+      "level": 2,
+      "sort_order": 4,
+      "attribute_schema": {
+        "attributes": [
+          {
+            "key": "shaft_height",
+            "label": "筒高",
+            "type": "enum",
+            "options": [
+              "短筒",
+              "中筒"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "heel",
+            "label": "鞋跟",
+            "type": "enum",
+            "options": [
+              "粗跟",
+              "平底"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "closure",
+            "label": "闭合",
+            "type": "enum",
+            "options": [
+              "松紧侧片",
+              "系带"
+            ],
+            "filterable": true
+          }
+        ]
+      },
+      "attribute_rules": {
+        "shaft_height": {
+          "tokens": {
+            "短筒": "短筒"
+          },
+          "default": "中筒"
+        },
+        "heel": {
+          "tokens": {
+            "粗跟": "粗跟"
+          },
+          "default": "平底"
+        },
+        "closure": {
+          "tokens": {
+            "松紧侧片": "松紧侧片"
+          },
+          "default": "系带"
+        }
+      },
+      "size_chart_template": null
+    },
+    {
+      "slug": "canvas_shoes",
+      "name": "帆布鞋",
+      "parent_slug": "footwear",
+      "level": 2,
+      "sort_order": 5,
+      "attribute_schema": {
+        "attributes": [
+          {
+            "key": "height",
+            "label": "帮高",
+            "type": "enum",
+            "options": [
+              "低帮",
+              "高帮"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "sole",
+            "label": "鞋底",
+            "type": "enum",
+            "options": [
+              "硫化底",
+              "橡胶底"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "lace",
+            "label": "鞋带",
+            "type": "enum",
+            "options": [
+              "撞色",
+              "同色"
+            ],
+            "filterable": true
+          }
+        ]
+      },
+      "attribute_rules": {
+        "height": {
+          "tokens": {
+            "低帮": "低帮"
+          },
+          "default": "高帮"
+        },
+        "sole": {
+          "tokens": {
+            "硫化底": "硫化底"
+          },
+          "default": "橡胶底"
+        },
+        "lace": {
+          "tokens": {
+            "撞色鞋带": "撞色"
+          },
+          "default": "同色"
+        }
+      },
+      "size_chart_template": null
+    },
+    {
+      "slug": "sandals",
+      "name": "凉鞋",
+      "parent_slug": "footwear",
+      "level": 2,
+      "sort_order": 6,
+      "attribute_schema": {
+        "attributes": [
+          {
+            "key": "toe_shape",
+            "label": "鞋头",
+            "type": "enum",
+            "options": [
+              "露趾",
+              "包头"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "closure",
+            "label": "闭合",
+            "type": "enum",
+            "options": [
+              "搭扣",
+              "一脚蹬"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "sole",
+            "label": "鞋底",
+            "type": "enum",
+            "options": [
+              "轻便",
+              "厚底"
+            ],
+            "filterable": true
+          }
+        ]
+      },
+      "attribute_rules": {
+        "toe_shape": {
+          "tokens": {
+            "露趾": "露趾"
+          },
+          "default": "包头"
+        },
+        "closure": {
+          "tokens": {
+            "搭扣": "搭扣"
+          },
+          "default": "一脚蹬"
+        },
+        "sole": {
+          "tokens": {
+            "轻便鞋底": "轻便"
+          },
+          "default": "厚底"
+        }
+      },
+      "size_chart_template": null
+    },
+    {
+      "slug": "slippers",
+      "name": "拖鞋",
+      "parent_slug": "footwear",
+      "level": 2,
+      "sort_order": 7,
+      "attribute_schema": {
+        "attributes": [
+          {
+            "key": "toe_shape",
+            "label": "鞋头",
+            "type": "enum",
+            "options": [
+              "包头",
+              "露趾"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "sole",
+            "label": "鞋底",
+            "type": "enum",
+            "options": [
+              "软底",
+              "硬底"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "anti_slip",
+            "label": "防滑",
+            "type": "enum",
+            "options": [
+              "防滑",
+              "普通"
+            ],
+            "filterable": true
+          }
+        ]
+      },
+      "attribute_rules": {
+        "toe_shape": {
+          "tokens": {
+            "包头": "包头"
+          },
+          "default": "露趾"
+        },
+        "sole": {
+          "tokens": {
+            "软底": "软底"
+          },
+          "default": "硬底"
+        },
+        "anti_slip": {
+          "tokens": {
+            "防滑": "防滑"
+          },
+          "default": "普通"
+        }
+      },
+      "size_chart_template": null
+    },
+    {
+      "slug": "high_heels",
+      "name": "高跟鞋",
+      "parent_slug": "footwear",
+      "level": 2,
+      "sort_order": 8,
+      "attribute_schema": {
+        "attributes": [
+          {
+            "key": "toe_shape",
+            "label": "鞋头",
+            "type": "enum",
+            "options": [
+              "尖头",
+              "圆头"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "heel",
+            "label": "鞋跟",
+            "type": "enum",
+            "options": [
+              "细跟",
+              "粗跟"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "opening",
+            "label": "鞋口",
+            "type": "enum",
+            "options": [
+              "浅口",
+              "包脚"
+            ],
+            "filterable": true
+          }
+        ]
+      },
+      "attribute_rules": {
+        "toe_shape": {
+          "tokens": {
+            "尖头": "尖头"
+          },
+          "default": "圆头"
+        },
+        "heel": {
+          "tokens": {
+            "细跟": "细跟"
+          },
+          "default": "粗跟"
+        },
+        "opening": {
+          "tokens": {
+            "浅口": "浅口"
+          },
+          "default": "包脚"
+        }
+      },
+      "size_chart_template": null
+    },
+    {
+      "slug": "backpacks",
+      "name": "双肩包",
+      "parent_slug": "bags",
+      "level": 2,
+      "sort_order": 1,
+      "attribute_schema": {
+        "attributes": [
+          {
+            "key": "capacity",
+            "label": "容量",
+            "type": "enum",
+            "options": [
+              "大容量",
+              "常规"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "laptop_sleeve",
+            "label": "电脑夹层",
+            "type": "enum",
+            "options": [
+              "有",
+              "无"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "closure",
+            "label": "闭合",
+            "type": "enum",
+            "options": [
+              "拉链",
+              "翻盖"
+            ],
+            "filterable": true
+          }
+        ]
+      },
+      "attribute_rules": {
+        "capacity": {
+          "tokens": {
+            "大容量": "大容量"
+          },
+          "default": "常规"
+        },
+        "laptop_sleeve": {
+          "tokens": {
+            "电脑夹层": "有"
+          },
+          "default": "无"
+        },
+        "closure": {
+          "tokens": {
+            "拉链主袋": "拉链"
+          },
+          "default": "翻盖"
+        }
+      },
+      "size_chart_template": null
+    },
+    {
+      "slug": "handbags",
+      "name": "手提包",
+      "parent_slug": "bags",
+      "level": 2,
+      "sort_order": 2,
+      "attribute_schema": {
+        "attributes": [
+          {
+            "key": "shape",
+            "label": "包型",
+            "type": "enum",
+            "options": [
+              "定型",
+              "软身"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "strap",
+            "label": "肩带",
+            "type": "enum",
+            "options": [
+              "可拆卸",
+              "固定"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "closure",
+            "label": "闭合",
+            "type": "enum",
+            "options": [
+              "拉链",
+              "磁扣"
+            ],
+            "filterable": true
+          }
+        ]
+      },
+      "attribute_rules": {
+        "shape": {
+          "tokens": {
+            "定型包身": "定型"
+          },
+          "default": "软身"
+        },
+        "strap": {
+          "tokens": {
+            "可拆卸肩带": "可拆卸"
+          },
+          "default": "固定"
+        },
+        "closure": {
+          "tokens": {
+            "拉链": "拉链"
+          },
+          "default": "磁扣"
+        }
+      },
+      "size_chart_template": null
+    },
+    {
+      "slug": "shoulder_bags",
+      "name": "单肩包",
+      "parent_slug": "bags",
+      "level": 2,
+      "sort_order": 3,
+      "attribute_schema": {
+        "attributes": [
+          {
+            "key": "strap",
+            "label": "肩带",
+            "type": "enum",
+            "options": [
+              "可调节",
+              "固定"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "capacity",
+            "label": "容量",
+            "type": "enum",
+            "options": [
+              "轻量",
+              "大容量"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "closure",
+            "label": "闭合",
+            "type": "enum",
+            "options": [
+              "磁扣",
+              "拉链"
+            ],
+            "filterable": true
+          }
+        ]
+      },
+      "attribute_rules": {
+        "strap": {
+          "tokens": {
+            "可调节肩带": "可调节"
+          },
+          "default": "固定"
+        },
+        "capacity": {
+          "tokens": {
+            "轻量": "轻量"
+          },
+          "default": "大容量"
+        },
+        "closure": {
+          "tokens": {
+            "磁扣": "磁扣"
+          },
+          "default": "拉链"
+        }
+      },
+      "size_chart_template": null
+    },
+    {
+      "slug": "crossbody_bags",
+      "name": "斜挎包",
+      "parent_slug": "bags",
+      "level": 2,
+      "sort_order": 4,
+      "attribute_schema": {
+        "attributes": [
+          {
+            "key": "bag_size",
+            "label": "包身尺寸",
+            "type": "enum",
+            "options": [
+              "小号",
+              "中号"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "front_pocket",
+            "label": "前置口袋",
+            "type": "enum",
+            "options": [
+              "有",
+              "无"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "closure",
+            "label": "闭合",
+            "type": "enum",
+            "options": [
+              "拉链",
+              "磁扣"
+            ],
+            "filterable": true
+          }
+        ]
+      },
+      "attribute_rules": {
+        "front_pocket": {
+          "tokens": {
+            "前置口袋": "有"
+          },
+          "default": "无"
+        },
+        "closure": {
+          "tokens": {
+            "拉链": "拉链"
+          },
+          "default": "磁扣"
+        },
+        "bag_size": {
+          "tokens": {
+            "小号": "小号"
+          },
+          "default": "中号"
+        }
+      },
+      "size_chart_template": null
+    },
+    {
+      "slug": "wallets",
+      "name": "钱包",
+      "parent_slug": "bags",
+      "level": 2,
+      "sort_order": 5,
+      "attribute_schema": {
+        "attributes": [
+          {
+            "key": "wallet_style",
+            "label": "款式",
+            "type": "enum",
+            "options": [
+              "对折",
+              "长款"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "rfid",
+            "label": "RFID",
+            "type": "enum",
+            "options": [
+              "有",
+              "无"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "capacity",
+            "label": "容量",
+            "type": "enum",
+            "options": [
+              "轻薄",
+              "多卡位"
+            ],
+            "filterable": true
+          }
+        ]
+      },
+      "attribute_rules": {
+        "rfid": {
+          "tokens": {
+            "RFID": "有"
+          },
+          "default": "无"
+        },
+        "capacity": {
+          "tokens": {
+            "轻薄": "轻薄"
+          },
+          "default": "多卡位"
+        },
+        "wallet_style": {
+          "tokens": {
+            "对折": "对折"
+          },
+          "default": "长款"
+        }
+      },
+      "size_chart_template": null
+    },
+    {
+      "slug": "luggage",
+      "name": "行李箱",
+      "parent_slug": "bags",
+      "level": 2,
+      "sort_order": 6,
+      "attribute_schema": {
+        "attributes": [
+          {
+            "key": "luggage_size",
+            "label": "箱体尺寸",
+            "type": "enum",
+            "options": [
+              "20寸",
+              "24寸"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "wheel",
+            "label": "轮型",
+            "type": "enum",
+            "options": [
+              "万向轮",
+              "普通轮"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "lock",
+            "label": "锁具",
+            "type": "enum",
+            "options": [
+              "TSA锁",
+              "普通锁"
+            ],
+            "filterable": true
+          }
+        ]
+      },
+      "attribute_rules": {
+        "wheel": {
+          "tokens": {
+            "万向轮": "万向轮"
+          },
+          "default": "普通轮"
+        },
+        "lock": {
+          "tokens": {
+            "TSA锁": "TSA锁"
+          },
+          "default": "普通锁"
+        },
+        "luggage_size": {
+          "tokens": {
+            "20寸": "20寸"
+          },
+          "default": "24寸"
+        }
+      },
+      "size_chart_template": null
+    },
+    {
+      "slug": "tote_bags",
+      "name": "托特包",
+      "parent_slug": "bags",
+      "level": 2,
+      "sort_order": 7,
+      "attribute_schema": {
+        "attributes": [
+          {
+            "key": "capacity",
+            "label": "容量",
+            "type": "enum",
+            "options": [
+              "大容量",
+              "常规"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "closure",
+            "label": "闭合",
+            "type": "enum",
+            "options": [
+              "开口",
+              "拉链"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "carry_style",
+            "label": "提法",
+            "type": "enum",
+            "options": [
+              "肩带",
+              "手提"
+            ],
+            "filterable": true
+          }
+        ]
+      },
+      "attribute_rules": {
+        "capacity": {
+          "tokens": {
+            "大容量": "大容量"
+          },
+          "default": "常规"
+        },
+        "closure": {
+          "tokens": {
+            "开口": "开口"
+          },
+          "default": "拉链"
+        },
+        "carry_style": {
+          "tokens": {
+            "肩带": "肩带"
+          },
+          "default": "手提"
+        }
+      },
+      "size_chart_template": null
+    },
+    {
+      "slug": "waist_bags",
+      "name": "腰包",
+      "parent_slug": "bags",
+      "level": 2,
+      "sort_order": 8,
+      "attribute_schema": {
+        "attributes": [
+          {
+            "key": "closure",
+            "label": "闭合",
+            "type": "enum",
+            "options": [
+              "搭扣",
+              "拉链"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "multi_pocket",
+            "label": "隔层",
+            "type": "enum",
+            "options": [
+              "多隔层",
+              "单层"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "waterproof",
+            "label": "防水",
+            "type": "enum",
+            "options": [
+              "防泼水",
+              "普通"
+            ],
+            "filterable": true
+          }
+        ]
+      },
+      "attribute_rules": {
+        "closure": {
+          "tokens": {
+            "搭扣": "搭扣"
+          },
+          "default": "拉链"
+        },
+        "multi_pocket": {
+          "tokens": {
+            "多隔层": "多隔层"
+          },
+          "default": "单层"
+        },
+        "waterproof": {
+          "tokens": {
+            "防泼水": "防泼水"
+          },
+          "default": "普通"
+        }
+      },
+      "size_chart_template": null
+    },
+    {
+      "slug": "hats",
+      "name": "帽子",
+      "parent_slug": "accessories",
+      "level": 2,
+      "sort_order": 1,
+      "attribute_schema": {
+        "attributes": [
+          {
+            "key": "adjustable",
+            "label": "调节",
+            "type": "enum",
+            "options": [
+              "可调节",
+              "固定"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "brim",
+            "label": "帽檐",
+            "type": "enum",
+            "options": [
+              "弯檐",
+              "平檐"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "breathable",
+            "label": "透气",
+            "type": "enum",
+            "options": [
+              "有",
+              "无"
+            ],
+            "filterable": true
+          }
+        ]
+      },
+      "attribute_rules": {
+        "adjustable": {
+          "tokens": {
+            "可调节后扣": "可调节"
+          },
+          "default": "固定"
+        },
+        "brim": {
+          "tokens": {
+            "弯檐": "弯檐"
+          },
+          "default": "平檐"
+        },
+        "breathable": {
+          "tokens": {
+            "透气孔": "有"
+          },
+          "default": "无"
+        }
+      },
+      "size_chart_template": null
+    },
+    {
+      "slug": "scarves",
+      "name": "围巾",
+      "parent_slug": "accessories",
+      "level": 2,
+      "sort_order": 2,
+      "attribute_schema": {
+        "attributes": [
+          {
+            "key": "length",
+            "label": "长度",
+            "type": "enum",
+            "options": [
+              "长款",
+              "短款"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "pattern",
+            "label": "图案",
+            "type": "enum",
+            "options": [
+              "格纹",
+              "纯色"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "fringe",
+            "label": "流苏",
+            "type": "enum",
+            "options": [
+              "有",
+              "无"
+            ],
+            "filterable": true
+          }
+        ]
+      },
+      "attribute_rules": {
+        "length": {
+          "tokens": {
+            "长款": "长款"
+          },
+          "default": "短款"
+        },
+        "pattern": {
+          "tokens": {
+            "格纹": "格纹"
+          },
+          "default": "纯色"
+        },
+        "fringe": {
+          "tokens": {
+            "流苏": "有"
+          },
+          "default": "无"
+        }
+      },
+      "size_chart_template": null
+    },
+    {
+      "slug": "belts",
+      "name": "腰带",
+      "parent_slug": "accessories",
+      "level": 2,
+      "sort_order": 3,
+      "attribute_schema": {
+        "attributes": [
+          {
+            "key": "width",
+            "label": "宽度",
+            "type": "enum",
+            "options": [
+              "宽3.5cm",
+              "窄版"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "buckle",
+            "label": "扣型",
+            "type": "enum",
+            "options": [
+              "针扣",
+              "自动扣"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "adjustable",
+            "label": "调节",
+            "type": "enum",
+            "options": [
+              "可调节",
+              "固定"
+            ],
+            "filterable": true
+          }
+        ]
+      },
+      "attribute_rules": {
+        "width": {
+          "tokens": {
+            "宽3.5cm": "宽3.5cm"
+          },
+          "default": "窄版"
+        },
+        "buckle": {
+          "tokens": {
+            "针扣": "针扣"
+          },
+          "default": "自动扣"
+        },
+        "adjustable": {
+          "tokens": {
+            "可调节": "可调节"
+          },
+          "default": "固定"
+        }
+      },
+      "size_chart_template": null
+    },
+    {
+      "slug": "socks",
+      "name": "袜子",
+      "parent_slug": "accessories",
+      "level": 2,
+      "sort_order": 4,
+      "attribute_schema": {
+        "attributes": [
+          {
+            "key": "length",
+            "label": "长度",
+            "type": "enum",
+            "options": [
+              "中筒",
+              "短筒"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "thickness",
+            "label": "厚度",
+            "type": "enum",
+            "options": [
+              "加厚",
+              "常规"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "pattern",
+            "label": "图案",
+            "type": "enum",
+            "options": [
+              "纯色",
+              "条纹"
+            ],
+            "filterable": true
+          }
+        ]
+      },
+      "attribute_rules": {
+        "length": {
+          "tokens": {
+            "中筒": "中筒"
+          },
+          "default": "短筒"
+        },
+        "thickness": {
+          "tokens": {
+            "加厚": "加厚"
+          },
+          "default": "常规"
+        },
+        "pattern": {
+          "tokens": {
+            "纯色": "纯色"
+          },
+          "default": "条纹"
+        }
+      },
+      "size_chart_template": null
+    },
+    {
+      "slug": "gloves",
+      "name": "手套",
+      "parent_slug": "accessories",
+      "level": 2,
+      "sort_order": 5,
+      "attribute_schema": {
+        "attributes": [
+          {
+            "key": "fingers",
+            "label": "分指",
+            "type": "enum",
+            "options": [
+              "分指",
+              "连指"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "touchscreen",
+            "label": "触屏",
+            "type": "enum",
+            "options": [
+              "支持",
+              "不支持"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "lining",
+            "label": "内里",
+            "type": "enum",
+            "options": [
+              "加绒",
+              "常规"
+            ],
+            "filterable": true
+          }
+        ]
+      },
+      "attribute_rules": {
+        "fingers": {
+          "tokens": {
+            "分指": "分指"
+          },
+          "default": "连指"
+        },
+        "touchscreen": {
+          "tokens": {
+            "触屏": "支持"
+          },
+          "default": "不支持"
+        },
+        "lining": {
+          "tokens": {
+            "加绒": "加绒"
+          },
+          "default": "常规"
+        }
+      },
+      "size_chart_template": null
+    },
+    {
+      "slug": "sunglasses",
+      "name": "墨镜",
+      "parent_slug": "accessories",
+      "level": 2,
+      "sort_order": 6,
+      "attribute_schema": {
+        "attributes": [
+          {
+            "key": "frame",
+            "label": "镜框",
+            "type": "enum",
+            "options": [
+              "全框",
+              "半框"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "lens",
+            "label": "镜片",
+            "type": "enum",
+            "options": [
+              "偏光",
+              "普通"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "protection",
+            "label": "防护",
+            "type": "enum",
+            "options": [
+              "UV400",
+              "普通"
+            ],
+            "filterable": true
+          }
+        ]
+      },
+      "attribute_rules": {
+        "frame": {
+          "tokens": {
+            "全框": "全框"
+          },
+          "default": "半框"
+        },
+        "lens": {
+          "tokens": {
+            "偏光": "偏光"
+          },
+          "default": "普通"
+        },
+        "protection": {
+          "tokens": {
+            "UV400": "UV400"
+          },
+          "default": "普通"
+        }
+      },
+      "size_chart_template": null
+    },
+    {
+      "slug": "necklaces",
+      "name": "项链",
+      "parent_slug": "accessories",
+      "level": 2,
+      "sort_order": 7,
+      "attribute_schema": {
+        "attributes": [
+          {
+            "key": "length",
+            "label": "长度",
+            "type": "enum",
+            "options": [
+              "锁骨链",
+              "长链"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "pendant",
+            "label": "吊坠",
+            "type": "enum",
+            "options": [
+              "有",
+              "无"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "chain",
+            "label": "链条",
+            "type": "enum",
+            "options": [
+              "细链",
+              "粗链"
+            ],
+            "filterable": true
+          }
+        ]
+      },
+      "attribute_rules": {
+        "length": {
+          "tokens": {
+            "锁骨链": "锁骨链"
+          },
+          "default": "长链"
+        },
+        "pendant": {
+          "tokens": {
+            "吊坠": "有"
+          },
+          "default": "无"
+        },
+        "chain": {
+          "tokens": {
+            "细链": "细链"
+          },
+          "default": "粗链"
+        }
+      },
+      "size_chart_template": null
+    },
+    {
+      "slug": "watches",
+      "name": "手表",
+      "parent_slug": "accessories",
+      "level": 2,
+      "sort_order": 8,
+      "attribute_schema": {
+        "attributes": [
+          {
+            "key": "dial",
+            "label": "表盘",
+            "type": "enum",
+            "options": [
+              "圆形",
+              "方形"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "water_resistance",
+            "label": "防水",
+            "type": "enum",
+            "options": [
+              "30米",
+              "普通"
+            ],
+            "filterable": true
+          },
+          {
+            "key": "movement",
+            "label": "机芯",
+            "type": "enum",
+            "options": [
+              "石英",
+              "机械"
+            ],
+            "filterable": true
+          }
+        ]
+      },
+      "attribute_rules": {
+        "dial": {
+          "tokens": {
+            "圆形表盘": "圆形"
+          },
+          "default": "方形"
+        },
+        "water_resistance": {
+          "tokens": {
+            "30米防水": "30米"
+          },
+          "default": "普通"
+        },
+        "movement": {
+          "tokens": {
+            "石英机芯": "石英"
+          },
+          "default": "机械"
+        }
+      },
+      "size_chart_template": null
+    }
+  ]
+}

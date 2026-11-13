@@ -68,3 +68,38 @@ def client(clean_users):
     """每个测试使用独立 TestClient；会先清空 users 表。"""
     with TestClient(app) as test_client:
         yield test_client
+
+
+@pytest.fixture
+def clean_catalog(migrated_database):
+    """清空商品域四表；不影响 users。"""
+
+    async def _clean() -> None:
+        engine = create_async_engine(TEST_DATABASE_URL, poolclass=NullPool)
+        async with engine.begin() as connection:
+            await connection.execute(
+                text(
+                    "TRUNCATE TABLE favorites, product_skus, products, categories "
+                    "RESTART IDENTITY CASCADE"
+                )
+            )
+        await engine.dispose()
+
+    asyncio.run(_clean())
+    yield
+
+
+@pytest.fixture
+def seeded_catalog(clean_catalog):
+    """导入已提交的商品种子 JSON。"""
+    result = subprocess.run(
+        [sys.executable, "-m", "scripts.seed_catalog"],
+        cwd=BACKEND_DIR,
+        env={**os.environ, "PYTHONIOENCODING": "utf-8"},
+        check=False,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+    assert result.returncode == 0, result.stderr
+    yield
