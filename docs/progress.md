@@ -49,7 +49,7 @@
 - 新增环境变量：`DATABASE_URL`、`TEST_DATABASE_URL`、`JWT_SECRET_KEY`、`JWT_ALGORITHM`、`JWT_EXPIRE_MINUTES`、`CORS_ORIGINS`
 - 测试与验收：
   - 命令：`cd backend && python -m pytest -v`；`cd frontend && npm run build`；`cd frontend && npm run test:e2e`
-  - 结果：后端 `48 passed`（16.91s）；前端构建成功（vue-tsc 无报错，Vite 378 modules，2.40s）；E2E `2 passed`（5.5s）；手工验收 6 步通过（真实浏览器 Playwright 抽查：未登录重定向、demo 登录、双 Tab、我的页资料与退出、退出回登录、刷新仍在登录页）。
+  - 结果：后端 `48 passed`（16.91s）；前端构建成功（vue-tsc 无报错，Vite 378 modules，2.40s）；E2E `2 passed`（5.5s，含用户资料卡断言）；手工验收 6 步通过（真实浏览器 Playwright 抽查：未登录重定向、demo 登录、双 Tab、我的页资料与退出、退出回登录、刷新仍在登录页）。
 - 遗留问题：
   - 登录态为 localStorage JWT，无 refresh token；改密码/找回密码/OAuth/限流均未实现。
   - `PATCH /api/users/me` 个人资料编辑未实现。
@@ -62,7 +62,7 @@
   - README 的 `.env` 脚本对带引号空值 `JWT_SECRET_KEY=""` 会误判为已配置（边缘情况）。
   - 设计文档 §13.3 的环境变量名已由 `JWT_SECRET` 修正为 `JWT_SECRET_KEY`，与代码和 `.env.example` 对齐。
 - 下一模块依赖：M1 可直接复用 users 表、`get_current_user` 依赖、Axios 客户端、Pinia 认证 store、双 Tab 布局；后端本地端口 8100，前端代理已指向该端口。
-- commit：`56648ce`（代码完成；tag `m0` 在最终复核后创建）
+- commit：`56648ce`（M0 收尾提交；实现提交见 `git log`；tag `m0` 在最终复核后创建）
 
 ## 记录模板（复制用）
 
