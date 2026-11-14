@@ -13,7 +13,7 @@ import {
   sendSupportMessage,
 } from '@/api/support'
 import ProductImage from '@/components/catalog/ProductImage.vue'
-import type { ProductDetail } from '@/types/catalog'
+import type { ProductDetail, SizeChartRow } from '@/types/catalog'
 import type {
   AnswerMeta,
   ChatMessage,
@@ -21,7 +21,7 @@ import type {
   Citation,
 } from '@/types/support'
 import { getErrorMessage } from '@/utils/error'
-import { formatPrice } from '@/utils/format'
+import { formatPrice, formatRange } from '@/utils/format'
 
 const route = useRoute()
 const router = useRouter()
@@ -41,6 +41,8 @@ const streamingText = ref('')
 const streamingCitations = ref<Citation[]>([])
 const streamingHandoff = ref(false)
 const feedbackState = reactive<Record<number, boolean>>({})
+const showCitation = ref(false)
+const activeCitation = ref<Citation | null>(null)
 
 const DOC_LABELS: Record<string, string> = {
   detail: '商品详情',
@@ -72,6 +74,39 @@ const productSubtitle = computed(() => {
   return selectedSize.value ? `${price} · 已选 ${selectedSize.value} 码` : price
 })
 
+const isSizeCitation = computed(
+  () =>
+    activeCitation.value?.doc_type === 'size' &&
+    Boolean(product.value?.size_chart?.rows?.length),
+)
+
+const citationSizeColumns = computed(() => {
+  if (product.value?.size_chart?.type === 'shoes') {
+    return ['尺码', '脚长(mm)']
+  }
+  return ['尺码', '身高(cm)', '体重(kg)', '胸围(cm)', '腰围(cm)']
+})
+
+const citationSizeNote = computed(() => {
+  const content = activeCitation.value?.content ?? ''
+  const marker = '测量说明：'
+  const index = content.indexOf(marker)
+  return index >= 0 ? content.slice(index + marker.length).trim() : ''
+})
+
+function citationRowValues(row: SizeChartRow): string[] {
+  if (product.value?.size_chart?.type === 'shoes') {
+    return [row.size, formatRange(row.foot_length)]
+  }
+  return [
+    row.size,
+    formatRange(row.height),
+    formatRange(row.weight),
+    formatRange(row.chest),
+    formatRange(row.waist),
+  ]
+}
+
 function friendlyError(error: unknown): string {
   if (axios.isAxiosError(error)) {
     return getErrorMessage(error)
@@ -90,8 +125,16 @@ function citationsOf(message: ChatMessage): Citation[] {
   return Array.isArray(message.meta.citations) ? message.meta.citations : []
 }
 
-function citationLabel(citation: Citation): string {
+function citationLabel(citation: Citation | null): string {
+  if (!citation) {
+    return '参考资料'
+  }
   return DOC_LABELS[citation.doc_type] ?? '参考资料'
+}
+
+function openCitation(citation: Citation): void {
+  activeCitation.value = citation
+  showCitation.value = true
 }
 
 function isHandoff(message: ChatMessage): boolean {
@@ -349,14 +392,16 @@ onMounted(() => {
                   v-if="citationsOf(message).length"
                   class="citation-list"
                 >
-                  <span
+                  <button
                     v-for="(citation, index) in citationsOf(message)"
                     :key="index"
+                    type="button"
                     class="citation-chip"
+                    @click="openCitation(citation)"
                   >
                     <van-icon name="notes-o" size="11" />
                     {{ citationLabel(citation) }}
-                  </span>
+                  </button>
                 </div>
                 <button
                   v-if="isHandoff(message) && !waitingHuman"
@@ -403,14 +448,16 @@ onMounted(() => {
                 v-if="streamingCitations.length"
                 class="citation-list"
               >
-                <span
+                <button
                   v-for="(citation, index) in streamingCitations"
                   :key="index"
+                  type="button"
                   class="citation-chip"
+                  @click="openCitation(citation)"
                 >
                   <van-icon name="notes-o" size="11" />
                   {{ citationLabel(citation) }}
-                </span>
+                </button>
               </div>
             </div>
           </div>
@@ -444,6 +491,63 @@ onMounted(() => {
           <van-icon name="guide-o" size="20" />
         </button>
       </form>
+
+      <van-popup
+        v-model:show="showCitation"
+        position="bottom"
+        round
+        class="citation-popup"
+      >
+        <div class="citation-head">
+          <div class="citation-heading">
+            <div class="citation-kicker">{{ citationLabel(activeCitation) }}</div>
+            <h2>{{ activeCitation?.title || '知识库引用' }}</h2>
+          </div>
+          <button
+            type="button"
+            class="citation-close"
+            aria-label="关闭"
+            @click="showCitation = false"
+          >
+            <van-icon name="cross" />
+          </button>
+        </div>
+        <div v-if="isSizeCitation && product?.size_chart" class="citation-size">
+          <div class="citation-table-wrap">
+            <table class="citation-table">
+              <thead>
+                <tr>
+                  <th v-for="column in citationSizeColumns" :key="column">
+                    {{ column }}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="row in product.size_chart.rows"
+                  :key="row.size"
+                >
+                  <td
+                    v-for="(value, index) in citationRowValues(row)"
+                    :key="index"
+                  >
+                    {{ value }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p v-if="citationSizeNote" class="citation-size-note">
+            {{ citationSizeNote }}
+          </p>
+        </div>
+        <p v-else-if="activeCitation?.content" class="citation-body">
+          {{ activeCitation.content }}
+        </p>
+        <p v-else class="citation-body muted">
+          这条引用来自历史消息，暂未保存原文。
+        </p>
+      </van-popup>
     </template>
   </div>
 </template>
@@ -629,12 +733,120 @@ onMounted(() => {
   display: inline-flex;
   align-items: center;
   gap: 3px;
+  font-family: inherit;
   font-size: 9.5px;
+  line-height: 1.4;
   color: var(--color-primary);
   background: var(--color-primary-soft);
   border: 1px solid var(--color-primary-border);
   border-radius: 8px;
   padding: 2px 6px;
+  cursor: pointer;
+}
+
+.citation-chip:active {
+  opacity: 0.65;
+}
+
+.citation-popup {
+  padding: 18px 16px calc(20px + env(safe-area-inset-bottom));
+  max-height: 72vh;
+  overflow-y: auto;
+}
+
+.citation-size {
+  margin-top: 14px;
+}
+
+.citation-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+}
+
+.citation-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.citation-table th,
+.citation-table td {
+  padding: 9px 8px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.citation-table th {
+  background: var(--color-field-bg);
+  color: var(--color-text-secondary);
+  font-weight: 600;
+}
+
+.citation-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.citation-size-note {
+  margin: 12px 2px 0;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  line-height: 1.65;
+}
+
+.citation-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.citation-heading {
+  min-width: 0;
+}
+
+.citation-kicker {
+  font-size: 10px;
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.citation-head h2 {
+  margin: 5px 0 0;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.citation-close {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 50%;
+  background: var(--color-field-bg);
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.citation-body {
+  margin: 14px 0 0;
+  max-height: 45vh;
+  overflow-y: auto;
+  padding: 11px 12px;
+  border-radius: 10px;
+  background: var(--color-field-bg);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.citation-body.muted {
+  color: var(--color-text-tertiary);
 }
 
 .escalate-button {

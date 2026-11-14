@@ -234,6 +234,14 @@ def test_seed_without_key_stores_null_embeddings_then_backfills(
         == 2
     )
 
+    reembed = run_seed(
+        ["--reembed"],
+        {"AI_PROVIDER": "fake", "DASHSCOPE_API_KEY": ""},
+    )
+    assert reembed.returncode == 0, reembed.stderr
+    assert "检查 2 个 chunk" in reembed.stdout
+    assert "写入 2" in reembed.stdout
+
 
 def test_seed_dedupes_identical_chunks_in_same_scope(
     clean_support, sample_catalog, tmp_path

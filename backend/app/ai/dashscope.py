@@ -14,6 +14,7 @@ from app.ai.base import (
     IntentResult,
     LLMError,
     LLMTimeoutError,
+    SupportPlan,
 )
 from app.ai.prompts.support_answer import ANSWER_SYSTEM, build_answer_user
 from app.ai.prompts.support_answerable import (
@@ -21,6 +22,7 @@ from app.ai.prompts.support_answerable import (
     build_answerable_user,
 )
 from app.ai.prompts.support_intent import INTENT_SYSTEM, build_intent_user
+from app.ai.prompts.support_plan import PLAN_SYSTEM, build_plan_user
 
 SchemaT = TypeVar("SchemaT", bound=BaseModel)
 
@@ -130,6 +132,18 @@ class DashScopeSupportLLM:
             INTENT_SYSTEM,
             build_intent_user(question, product_title),
             IntentResult,
+            temperature=0.1,
+        )
+
+    async def plan_support(
+        self,
+        question: str,
+        product_title: str,
+    ) -> SupportPlan:
+        return await self._structured(
+            PLAN_SYSTEM,
+            build_plan_user(question, product_title),
+            SupportPlan,
             temperature=0.1,
         )
 

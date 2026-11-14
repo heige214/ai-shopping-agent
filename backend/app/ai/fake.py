@@ -2,8 +2,14 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 
-from app.ai.base import AnswerabilityResult, IntentResult, LLMError
+from app.ai.base import (
+    AnswerabilityResult,
+    IntentResult,
+    LLMError,
+    SupportPlan,
+)
 from app.ai.local import LocalSupportLLM, _extract_topic
+from app.ai.size_rules import parse_size_query
 
 
 class FakeSupportLLM(LocalSupportLLM):
@@ -15,6 +21,7 @@ class FakeSupportLLM(LocalSupportLLM):
         intent: str | None = None,
         answerability: AnswerabilityResult | dict | None = None,
         answer_text: str | None = None,
+        plan: SupportPlan | dict | None = None,
         fail_intent: bool = False,
         fail_answerability: bool = False,
         fail_stream: bool = False,
@@ -22,6 +29,7 @@ class FakeSupportLLM(LocalSupportLLM):
         self.intent = intent
         self.answerability = answerability
         self.answer_text = answer_text
+        self.plan = plan
         self.fail_intent = fail_intent
         self.fail_answerability = fail_answerability
         self.fail_stream = fail_stream
@@ -35,6 +43,42 @@ class FakeSupportLLM(LocalSupportLLM):
                 entities={"question_topic": _extract_topic(question)},
             )
         return await super().route_intent(question, product_title)
+
+    async def plan_support(
+        self,
+        question: str,
+        product_title: str,
+    ) -> SupportPlan:
+        if self.fail_intent:
+            raise LLMError("fake plan failure")
+        if self.plan is not None:
+            if isinstance(self.plan, SupportPlan):
+                return self.plan
+            return SupportPlan.model_validate(self.plan)
+        if self.intent is None:
+            return await super().plan_support(question, product_title)
+
+        if self.intent == "order_qa":
+            return SupportPlan(action="handoff", handoff_kind="order")
+        if self.intent == "complaint":
+            return SupportPlan(action="handoff", handoff_kind="complaint")
+        if self.intent == "chitchat":
+            return SupportPlan(action="chitchat")
+        if self.intent == "unknown":
+            return SupportPlan(action="clarify")
+
+        tools = ["product_facts", "search_knowledge"]
+        if self.intent == "policy_qa":
+            tools = ["search_knowledge"]
+        size = parse_size_query(question).requested_size
+        if self.intent == "size_qa" and size:
+            tools.append("size_stock")
+        return SupportPlan(
+            action="rag",
+            tools=tools,
+            search_query=question,
+            size=size,
+        )
 
     async def judge_answerable(
         self,

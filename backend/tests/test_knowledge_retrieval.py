@@ -59,6 +59,24 @@ def test_tokenize_filters_stopwords_and_keeps_topics():
     assert "什么" not in tokens
 
 
+def test_tokenize_maps_colloquial_size_words_to_size_guide():
+    tokens = tokenize_query("有40码吗")
+    assert "尺码" in tokens
+    assert "码" not in tokens
+
+
+def test_tokenize_maps_in_stock_word_to_stock_chunk():
+    tokens = tokenize_query("有货吗")
+    assert "现货" in tokens
+    assert "有货" not in tokens
+
+
+def test_tokenize_maps_bare_letter_size_to_size_guide():
+    tokens = tokenize_query("有XS的吗")
+    assert "尺码" in tokens
+    assert "xs" not in tokens
+
+
 def test_retrieval_scope_only_product_ancestor_category_and_platform(
     sample_knowledge,
 ):
