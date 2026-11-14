@@ -18,6 +18,7 @@ from app.modules.knowledge.models import (  # noqa: F401
     KnowledgeDocument,
 )
 from app.modules.support.models import (  # noqa: F401
+    ChatAction,
     ChatMessage,
     ChatSession,
     SupportTicket,
@@ -37,5 +38,6 @@ __all__ = [
     "KnowledgeChunk",
     "ChatSession",
     "ChatMessage",
+    "ChatAction",
     "SupportTicket",
 ]

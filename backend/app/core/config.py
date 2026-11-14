@@ -22,7 +22,15 @@ class Settings(BaseSettings):
     chat_model: str = "qwen-plus"
     embedding_model: str = "text-embedding-v3"
     embedding_dim: int = 1024
+    vision_model: str = "qwen3-vl-flash"
+    asr_model: str = "paraformer-v2"
+    dashscope_native_base_url: str = "https://dashscope.aliyuncs.com/api/v1"
     llm_timeout_seconds: float = 20.0
+
+    # 上传：单文件大小上限（MB）与落盘目录（相对 backend/）
+    max_image_upload_mb: float = 5
+    max_voice_upload_mb: float = 10
+    upload_dir: str = "static/uploads"
 
     model_config = SettingsConfigDict(
         env_file=".env",

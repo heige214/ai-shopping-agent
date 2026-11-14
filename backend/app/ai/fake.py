@@ -4,15 +4,70 @@ from collections.abc import AsyncIterator
 
 from app.ai.base import (
     AnswerabilityResult,
+    ASRError,
     GuideQuery,
     GuideRerank,
     IntentResult,
     LLMError,
     SupportPlan,
+    VisionError,
+    VisionResult,
 )
 from app.ai.guide_local import LocalGuideLLM
 from app.ai.local import LocalSupportLLM, _extract_topic
 from app.ai.size_rules import parse_size_query
+
+
+class FakeVisionClient:
+    """测试与 E2E 使用：返回确定性的蓝色薄款纯棉衬衫。"""
+
+    def __init__(
+        self,
+        *,
+        result: VisionResult | dict | None = None,
+        fail: bool = False,
+    ) -> None:
+        self.result = result
+        self.fail = fail
+
+    async def describe_image(
+        self, image_bytes: bytes, mime_type: str
+    ) -> VisionResult:
+        if self.fail:
+            raise VisionError("fake vision failure")
+        if self.result is not None:
+            return VisionResult.model_validate(self.result)
+        return VisionResult(
+            category_path=["服装", "衬衫"],
+            attributes={
+                "color": ["蓝色"],
+                "material": ["棉"],
+                "thickness": ["薄款"],
+                "pattern": ["纯色"],
+            },
+            description="一件蓝色纯棉长袖薄款衬衫",
+            confidence=0.92,
+        )
+
+
+class FakeASRClient:
+    """测试与 E2E 使用：默认转写为“推荐几件衬衫”。"""
+
+    def __init__(
+        self,
+        *,
+        transcript: str = "推荐几件衬衫",
+        fail: bool = False,
+    ) -> None:
+        self.transcript = transcript
+        self.fail = fail
+
+    async def transcribe(
+        self, audio_bytes: bytes, mime_type: str, filename: str
+    ) -> str:
+        if self.fail:
+            raise ASRError("fake asr failure")
+        return self.transcript
 
 
 class FakeSupportLLM(LocalSupportLLM):

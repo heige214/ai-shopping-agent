@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import axios from 'axios'
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { showToast } from 'vant'
 
 import { fetchProducts } from '@/api/catalog'
@@ -10,14 +10,19 @@ import {
   fetchGuideSessions,
   sendGuideMessage,
 } from '@/api/guide'
+import { uploadImage } from '@/api/uploads'
 import CartBadge from '@/components/commerce/CartBadge.vue'
+import GuideActionCard from '@/components/guide/GuideActionCard.vue'
 import GuideEmptyState from '@/components/guide/GuideEmptyState.vue'
 import GuideProductCardView from '@/components/guide/GuideProductCard.vue'
+import VoiceRecorder from '@/components/guide/VoiceRecorder.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useCartStore } from '@/stores/cart'
 import { useCatalogStore } from '@/stores/catalog'
 import type { Category, ProductSummary } from '@/types/catalog'
 import type {
+  ActionCardContent,
+  ChatActionResponse,
   GuideProductCard,
   GuideProductsPayload,
   GuideStreamMeta,
@@ -45,6 +50,12 @@ const quickReplies = ref<string[]>([])
 const showHistory = ref(false)
 const historySessions = ref<ChatSession[]>([])
 const historyLoading = ref(false)
+const imageInput = ref<HTMLInputElement | null>(null)
+const pendingImage = ref<{ file: File; previewUrl: string } | null>(null)
+const pendingVoice = ref<{ audio_url: string; transcript: string } | null>(
+  null,
+)
+const uploading = ref(false)
 
 const examples = ['推荐几件衬衫', '通勤双肩包', '跑步运动鞋']
 
@@ -70,9 +81,48 @@ const showEmptyState = computed(
 const sessionActive = computed(
   () => !session.value || session.value.status === 'active',
 )
+const busy = computed(() => sending.value || uploading.value)
+const canSend = computed(
+  () =>
+    Boolean(input.value.trim() || pendingImage.value || pendingVoice.value) &&
+    !busy.value &&
+    sessionActive.value,
+)
 
 function messageText(message: ChatMessage): string {
   return typeof message.content.text === 'string' ? message.content.text : ''
+}
+
+function messageImage(message: ChatMessage): string {
+  return typeof message.content.image_url === 'string'
+    ? message.content.image_url
+    : ''
+}
+
+function messageAudio(message: ChatMessage): string {
+  return typeof message.content.audio_url === 'string'
+    ? message.content.audio_url
+    : ''
+}
+
+function actionCardOf(message: ChatMessage): ActionCardContent {
+  return message.content as unknown as ActionCardContent
+}
+
+function handleActionUpdated(
+  message: ChatMessage,
+  response: ChatActionResponse,
+): void {
+  message.content = {
+    ...(message.content as Record<string, unknown>),
+    status: response.status,
+    result: response.result,
+  }
+  message.meta = {
+    ...message.meta,
+    status: response.status,
+    result: response.result,
+  }
 }
 
 function productsOf(message: ChatMessage): GuideProductCard[] {
@@ -122,7 +172,7 @@ async function openHistory(): Promise<void> {
 }
 
 async function switchSession(target: ChatSession): Promise<void> {
-  if (sending.value) {
+  if (busy.value) {
     return
   }
   showHistory.value = false
@@ -134,6 +184,9 @@ async function switchSession(target: ChatSession): Promise<void> {
   quickReplies.value = []
   streamingText.value = ''
   streamingProducts.value = []
+  input.value = ''
+  clearPendingImage()
+  pendingVoice.value = null
   try {
     const page = await fetchGuideMessages(target.id, 50)
     messages.value = page.items
@@ -144,7 +197,7 @@ async function switchSession(target: ChatSession): Promise<void> {
 }
 
 async function startNewFromHistory(): Promise<void> {
-  if (sending.value) {
+  if (busy.value) {
     return
   }
   showHistory.value = false
@@ -200,11 +253,116 @@ async function ensureSession(): Promise<ChatSession> {
   return session.value
 }
 
-async function send(text: string): Promise<void> {
-  const content = text.trim()
-  if (!content || sending.value) {
+function clearPendingImage(): void {
+  if (pendingImage.value) {
+    URL.revokeObjectURL(pendingImage.value.previewUrl)
+  }
+  pendingImage.value = null
+}
+
+function chooseImage(): void {
+  imageInput.value?.click()
+}
+
+function onImagePicked(event: Event): void {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  target.value = ''
+  if (!file) {
     return
   }
+  const allowed = ['image/jpeg', 'image/png', 'image/webp']
+  if (!allowed.includes(file.type) || file.size > 5 * 1024 * 1024) {
+    showToast('图片需为 jpg/png/webp，且不超过 5MB')
+    return
+  }
+  clearPendingImage()
+  pendingImage.value = {
+    file,
+    previewUrl: URL.createObjectURL(file),
+  }
+}
+
+function handleVoiceRecorded(payload: {
+  audio_url: string
+  transcript: string
+}): void {
+  pendingVoice.value = payload
+  input.value = payload.transcript
+  showToast('已转写，可编辑后发送')
+}
+
+function handleVoiceError(message: string): void {
+  showToast(message)
+}
+
+function clearPendingVoice(): void {
+  pendingVoice.value = null
+}
+
+async function send(text: string): Promise<void> {
+  if (busy.value) {
+    return
+  }
+  const content = text.trim()
+  if (pendingImage.value) {
+    await sendImage(content)
+    return
+  }
+  if (pendingVoice.value) {
+    await sendVoice(content)
+    return
+  }
+  if (!content) {
+    return
+  }
+  await dispatch('text', { text: content }, { text: content })
+}
+
+async function sendImage(text: string): Promise<void> {
+  const pending = pendingImage.value
+  if (!pending || busy.value) {
+    return
+  }
+  uploading.value = true
+  try {
+    const uploaded = await uploadImage(pending.file)
+    const content: Record<string, unknown> = {
+      image_url: uploaded.url,
+    }
+    if (text) {
+      content.text = text
+    }
+    clearPendingImage()
+    uploading.value = false
+    await dispatch('image', content, content)
+  } catch (error) {
+    showToast(friendlyError(error))
+  } finally {
+    uploading.value = false
+  }
+}
+
+async function sendVoice(text: string): Promise<void> {
+  const pending = pendingVoice.value
+  if (!pending || busy.value) {
+    return
+  }
+  const spoken = text || pending.transcript
+  const content = {
+    audio_url: pending.audio_url,
+    transcript: pending.transcript,
+    text: spoken,
+  }
+  pendingVoice.value = null
+  await dispatch('voice', content, content)
+}
+
+async function dispatch(
+  contentType: 'text' | 'image' | 'voice',
+  content: Record<string, unknown>,
+  display: Record<string, unknown>,
+): Promise<void> {
   let chatSession: ChatSession
   try {
     chatSession = await ensureSession()
@@ -223,8 +381,8 @@ async function send(text: string): Promise<void> {
     id: -Date.now(),
     session_id: chatSession.id,
     sender_type: 'user',
-    content_type: 'text',
-    content: { text: content },
+    content_type: contentType,
+    content: display,
     meta: {},
     created_at: new Date().toISOString(),
   })
@@ -237,53 +395,79 @@ async function send(text: string): Promise<void> {
   let products: GuideProductCard[] = []
   let relaxed: string[] = []
   let doneId = 0
+  const actionCardRef = ref<ActionCardContent | null>(null)
   scrollToBottom()
 
   try {
-    await sendGuideMessage(chatSession.id, content, (event, data) => {
-      if (event === 'meta') {
-        metaRef.value = data as GuideStreamMeta
-        quickReplies.value = metaRef.value.quick_replies ?? []
-        scrollToBottom()
-      } else if (event === 'token') {
-        streamingText.value += (data as { text: string }).text
-        scrollToBottom()
-      } else if (event === 'products') {
-        const payload = data as GuideProductsPayload
-        products = payload.items ?? []
-        relaxed = payload.relaxed ?? []
-        streamingProducts.value = products
-        scrollToBottom()
-      } else if (event === 'done') {
-        doneId = (data as { message_id: number }).message_id
-      } else if (event === 'error') {
-        const message = (data as { message?: string }).message
-        if (message) {
-          showToast(message)
+    await sendGuideMessage(
+      chatSession.id,
+      { content_type: contentType, content },
+      (event, data) => {
+        if (event === 'meta') {
+          metaRef.value = data as GuideStreamMeta
+          quickReplies.value = metaRef.value.quick_replies ?? []
+          scrollToBottom()
+        } else if (event === 'token') {
+          streamingText.value += (data as { text: string }).text
+          scrollToBottom()
+        } else if (event === 'products') {
+          const payload = data as GuideProductsPayload
+          products = payload.items ?? []
+          relaxed = payload.relaxed ?? []
+          streamingProducts.value = products
+          scrollToBottom()
+        } else if (event === 'action') {
+          actionCardRef.value = data as ActionCardContent
+        } else if (event === 'done') {
+          doneId = (data as { message_id: number }).message_id
+        } else if (event === 'error') {
+          const message = (data as { message?: string }).message
+          if (message) {
+            showToast(message)
+          }
         }
-      }
-    })
+      },
+    )
 
     const meta = metaRef.value
-    const answerText =
-      streamingText.value || '暂时没有找到合适的商品，换个条件再试试。'
-    messages.value.push({
-      id: doneId || -Date.now(),
-      session_id: chatSession.id,
-      sender_type: 'ai',
-      content_type: 'text',
-      content: { text: answerText },
-      meta: {
-        intent: meta?.intent,
-        query: meta?.query,
-        need_clarify: meta?.need_clarify,
-        quick_replies: meta?.quick_replies ?? [],
-        degraded: meta?.degraded,
-        products,
-        relaxed,
-      },
-      created_at: new Date().toISOString(),
-    })
+    if (actionCardRef.value) {
+      const card = actionCardRef.value
+      messages.value.push({
+        id: doneId || -Date.now(),
+        session_id: chatSession.id,
+        sender_type: 'ai',
+        content_type: 'action_card',
+        content: card,
+        meta: {
+          intent: meta?.intent,
+          action_id: card.action_id,
+          action_type: card.action_type,
+          status: card.status,
+          payload: card.payload,
+        },
+        created_at: new Date().toISOString(),
+      })
+    } else {
+      const answerText =
+        streamingText.value || '暂时没有找到合适的商品，换个条件再试试。'
+      messages.value.push({
+        id: doneId || -Date.now(),
+        session_id: chatSession.id,
+        sender_type: 'ai',
+        content_type: 'text',
+        content: { text: answerText },
+        meta: {
+          intent: meta?.intent,
+          query: meta?.query,
+          need_clarify: meta?.need_clarify,
+          quick_replies: meta?.quick_replies ?? [],
+          degraded: meta?.degraded,
+          products,
+          relaxed,
+        },
+        created_at: new Date().toISOString(),
+      })
+    }
     quickReplies.value = meta?.quick_replies ?? []
   } catch (error) {
     showToast(friendlyError(error))
@@ -308,7 +492,7 @@ async function send(text: string): Promise<void> {
 }
 
 async function newConversation(): Promise<void> {
-  if (sending.value) {
+  if (busy.value) {
     return
   }
   try {
@@ -317,6 +501,8 @@ async function newConversation(): Promise<void> {
     quickReplies.value = []
     streamingProducts.value = []
     input.value = ''
+    clearPendingImage()
+    pendingVoice.value = null
     scrollToBottom()
   } catch (error) {
     showToast(friendlyError(error))
@@ -331,6 +517,12 @@ onMounted(() => {
   cart.load().catch(() => undefined)
   void loadDiscover()
   void loadSession()
+})
+
+onBeforeUnmount(() => {
+  if (pendingImage.value) {
+    URL.revokeObjectURL(pendingImage.value.previewUrl)
+  }
 })
 </script>
 
@@ -356,7 +548,7 @@ onMounted(() => {
         <button
           type="button"
           class="new-chat-button"
-          :disabled="sending"
+          :disabled="busy"
           @click="newConversation"
         >
           新对话
@@ -387,12 +579,37 @@ onMounted(() => {
             v-if="message.sender_type === 'user'"
             class="message-row user"
           >
-            <div class="bubble user-bubble">{{ messageText(message) }}</div>
+            <div
+              class="bubble user-bubble"
+              :class="{ 'media-bubble': message.content_type !== 'text' }"
+            >
+              <img
+                v-if="messageImage(message)"
+                class="message-image"
+                :src="messageImage(message)"
+                alt="图片消息"
+              />
+              <audio
+                v-if="messageAudio(message)"
+                class="message-audio"
+                :src="messageAudio(message)"
+                controls
+                preload="metadata"
+              />
+              <span v-if="messageText(message)" class="bubble-text">
+                {{ messageText(message) }}
+              </span>
+            </div>
           </div>
           <div v-else class="message-row ai">
             <div class="ai-avatar">AI</div>
             <div class="ai-content">
-              <div class="bubble ai-bubble">
+              <GuideActionCard
+                v-if="message.content_type === 'action_card'"
+                :card="actionCardOf(message)"
+                @updated="handleActionUpdated(message, $event)"
+              />
+              <div v-else class="bubble ai-bubble">
                 <span class="bubble-text">{{ messageText(message) }}</span>
                 <div
                   v-if="productsOf(message).length"
@@ -430,7 +647,7 @@ onMounted(() => {
           </div>
         </div>
 
-        <div v-if="quickReplies.length && !sending" class="quick-reply-row">
+        <div v-if="quickReplies.length && !busy" class="quick-reply-row">
           <button
             v-for="reply in quickReplies"
             :key="reply"
@@ -447,24 +664,76 @@ onMounted(() => {
 
     <form class="input-bar" @submit.prevent="send(input)">
       <input
-        v-model="input"
-        class="guide-input"
-        :disabled="sending || !sessionActive"
-        :placeholder="
-          sessionActive
-            ? '说说你想找什么，例如：蓝色薄衬衫'
-            : '会话已结束，点「新对话」继续'
-        "
-        maxlength="500"
+        ref="imageInput"
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        class="file-input"
+        data-testid="image-input"
+        @change="onImagePicked"
       />
-      <button
-        type="submit"
-        class="send-button"
-        :disabled="!input.trim() || sending || !sessionActive"
-        aria-label="发送"
+
+      <div
+        v-if="pendingImage || pendingVoice"
+        class="attachment-bar"
       >
-        <van-icon name="guide-o" size="20" />
-      </button>
+        <div v-if="pendingImage" class="image-attachment">
+          <img :src="pendingImage.previewUrl" alt="待发送图片" />
+          <button
+            type="button"
+            aria-label="移除图片"
+            @click="clearPendingImage"
+          >
+            <van-icon name="cross" size="10" />
+          </button>
+        </div>
+        <div v-if="pendingVoice" class="voice-attachment">
+          <van-icon name="audio" size="13" />
+          <span>语音：{{ pendingVoice.transcript }}</span>
+          <button
+            type="button"
+            aria-label="移除语音"
+            @click="clearPendingVoice"
+          >
+            <van-icon name="cross" size="10" />
+          </button>
+        </div>
+      </div>
+
+      <div class="input-row">
+        <button
+          type="button"
+          class="image-button"
+          aria-label="图片"
+          :disabled="busy || !sessionActive"
+          @click="chooseImage"
+        >
+          <van-icon name="photo-o" size="19" />
+        </button>
+        <VoiceRecorder
+          :disabled="busy || !sessionActive"
+          @recorded="handleVoiceRecorded"
+          @error="handleVoiceError"
+        />
+        <input
+          v-model="input"
+          class="guide-input"
+          :disabled="busy || !sessionActive || uploading"
+          :placeholder="
+            sessionActive
+              ? '说说你想找什么，例如：蓝色薄衬衫'
+              : '会话已结束，点「新对话」继续'
+          "
+          maxlength="500"
+        />
+        <button
+          type="submit"
+          class="send-button"
+          :disabled="!canSend"
+          aria-label="发送"
+        >
+          <van-icon :name="uploading ? 'loading' : 'guide-o'" size="20" />
+        </button>
+      </div>
     </form>
 
     <van-popup
@@ -492,7 +761,7 @@ onMounted(() => {
         type="button"
         class="history-new"
         aria-label="开始新对话"
-        :disabled="sending"
+        :disabled="busy"
         @click="startNewFromHistory"
       >
         <van-icon name="plus" size="13" />
@@ -810,6 +1079,28 @@ onMounted(() => {
   border-top-right-radius: 4px;
 }
 
+.user-bubble.media-bubble {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 6px;
+  max-width: 210px;
+}
+
+.message-image {
+  width: 100%;
+  max-height: 190px;
+  object-fit: cover;
+  border-radius: 9px;
+  display: block;
+}
+
+.message-audio {
+  width: 196px;
+  max-width: 100%;
+  height: 32px;
+}
+
 .guide-card-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -843,12 +1134,104 @@ onMounted(() => {
 .input-bar {
   flex: 0 0 auto;
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  gap: 7px;
   padding: 8px 12px;
   padding-bottom: calc(8px + env(safe-area-inset-bottom));
   background: var(--color-card);
   border-top: 1px solid var(--color-border);
+}
+
+.input-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.file-input {
+  display: none;
+}
+
+.image-button {
+  width: 34px;
+  height: 38px;
+  flex: 0 0 auto;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-button:disabled {
+  opacity: 0.4;
+}
+
+.attachment-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+}
+
+.image-attachment {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+  border-radius: 9px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+}
+
+.image-attachment img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.image-attachment button,
+.voice-attachment button {
+  border: 0;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.image-attachment button {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+}
+
+.voice-attachment {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--color-primary-soft);
+  border: 1px solid var(--color-primary-border);
+  color: var(--color-primary);
+  border-radius: 9px;
+  padding: 7px 9px;
+  font-size: 10.5px;
+}
+
+.voice-attachment span {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .guide-input {

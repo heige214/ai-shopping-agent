@@ -350,6 +350,27 @@ def guide_catalog(clean_catalog):
                 session.add_all(records)
                 await session.flush()
 
+                # 加购测试需要 SKU：衬衫 S/M/L/XL、运动鞋 39/40/41、双肩包均码
+                skus = []
+                for record in records:
+                    if record.product_code.startswith("G"):
+                        sizes = ["S", "M", "L", "XL"]
+                    elif record.product_code.startswith("S"):
+                        sizes = ["39", "40", "41"]
+                    else:
+                        sizes = ["均码"]
+                    for size in sizes:
+                        skus.append(
+                            ProductSku(
+                                product_id=record.id,
+                                color=record.attributes.get("color", "黑色"),
+                                size=size,
+                                stock=10,
+                                sku_code=f"{record.product_code}-{size}",
+                            )
+                        )
+                session.add_all(skus)
+
                 texts = [
                     (
                         f"{record.title} {record.brand or ''} "

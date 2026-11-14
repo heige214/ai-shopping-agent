@@ -107,6 +107,49 @@ class ChatMessage(Base):
     session: Mapped[ChatSession] = relationship(back_populates="messages")
 
 
+class ChatAction(Base):
+    """两阶段动作：导购先生成 pending 卡片，用户确认后执行。"""
+
+    __tablename__ = "chat_actions"
+    __table_args__ = (
+        CheckConstraint(
+            "action_type IN ('add_to_cart')", name="action_type_valid"
+        ),
+        CheckConstraint(
+            "status IN ('pending', 'confirmed', 'cancelled', 'executed', 'failed')",
+            name="status_valid",
+        ),
+        Index("ix_chat_actions_session_id", "session_id"),
+        Index("ix_chat_actions_message_id", "message_id"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    session_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("chat_sessions.id", ondelete="CASCADE"), nullable=False
+    )
+    message_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("chat_messages.id", ondelete="CASCADE"), nullable=False
+    )
+    action_type: Mapped[str] = mapped_column(String(30), nullable=False)
+    payload: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    status: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="pending", server_default="pending"
+    )
+    result: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, default=dict, server_default=text("'{}'::jsonb")
+    )
+    executed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+
 class SupportTicket(Base):
     """转人工工单：M3 只创建 waiting 工单，排队/接入/结束在 M6。"""
 

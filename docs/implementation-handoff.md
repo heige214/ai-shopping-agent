@@ -10,7 +10,7 @@
   - `docs/mockups/screens-agent.png`：客服端队列、会话工作台、知识审核
   - HTML 源文件与 `mockup.css` 在同一目录。
 - 商品图片：`backend/static/products` 共 300 张（4 个一级品类 × 75），鞋靴 75 张已补齐。
-- 前置状态（2026-11-14）：`git` 已初始化；M0、M1、M2、M3、M4 已完成；商品图本地备份尚未执行。
+- 前置状态（2026-11-14）：`git` 已初始化；M0、M1、M2、M3、M4、M4.1、M5 已完成；商品图本地备份尚未执行。
 - 主项目骨架与商品域已完成：M0 认证/双 Tab/迁移/测试基线；M1 品类/商品/SKU/收藏/分类列表/商品详情/可复用商品发现组件。
 - 交易域已完成（M2）：购物车、地址、订单、模拟支付/取消/确认收货、客服端已支付订单发货；库存扣减/恢复、支付幂等、超时取消、用户数据隔离与 `role ∈ {agent, admin}` 守卫均已落地。
 - 知识库与商品客服已完成（M3）：913 篇知识文档 / 1813 切片（商品详情、尺码、商品 FAQ、一级品类洗护、平台政策）；商品 + 一级品类 + 平台三级范围混合检索（向量 top20 + 关键词 top20 → RRF top8）；`/api/chat/sessions` 与 SSE 消息接口；商品客服页支持流式回答、引用、反馈、每会话一次澄清、固定兜底与最小转人工 waiting 工单。无 DashScope key 时使用本地规则 + 关键词检索，知识种子 embedding 可为 NULL。
@@ -18,6 +18,7 @@
 - M3 Agent（2026-11-14，同分支）：客服主链路改为 LangGraph 受控工作流 `plan → tools`，由规划模型选择 `product_facts` / `search_knowledge` / `size_stock` 工具，再流式回答；移除独立意图和可回答性模型调用，开放问题（如“这个小孩子能带吗”）不再被固定意图菜单反问。引用按问题主题收窄。M4 可直接复用 `run_support_agent` 与 `SupportPlan`。
 - M4 导购（2026-11-14，分支 `m4-guide-agent`，tag `m4`）：首页改为导购聊天；`type=guide` 默认复用最近 active 会话，`new=true` 显式新建，不写问候，escalate 返回 400；槽位多轮合并；结构化过滤 + 商品向量 top30 → RRF → LLM 重排 6~8 张卡；无结果按厚薄→材质→价格放宽并澄清一次；新增 `GET /api/products/{id}/size-recommendation`；商品向量已用 `text-embedding-v3` 补齐 300/300。后端 193 pytest、前端 build、8 条 E2E 通过。
 - M4.1 历史抽屉（2026-11-14，分支 `m4.1-guide-history`，tag `m4.1`）：首页顶部「历史」抽屉列出 guide 会话（标题/时间/进行中或已结束），点击切换并恢复消息与商品卡；抽屉内可显式新建会话；已结束会话输入禁用。前端 build 与 8 条 E2E 通过。
+- M5 多模态与加购（2026-11-14，分支 `m5-multimodal-cart`，tag `m5`）：新增图片/语音上传与理解、两阶段 `chat_actions` 加购。图片 `POST /api/uploads/image`（jpg/png/webp ≤5MB）→ Qwen-VL 结构化描述并入 M4 槽位；语音 `POST /api/uploads/voice`（webm/mp4/wav ≤10MB）→ Paraformer 转写，前端仅回填输入框由用户确认发送。guide 支持 `content_type=image/voice`，support 仍仅文字。加购 `chat_actions`（迁移 `20261114_0005`）：`last_products` 解析“第 N 件/这个/显式商品名 + 尺码/数量”，SSE `meta → action → done`，确认/取消普通 JSON 且幂等；确认锁 action/SKU 复用 `cart_service`，库存不足/下架返回 200 + failed + 可换尺码，越权 404。后端 215 pytest、前端 build、12 条 E2E 通过。
 - 本地开发端口：后端 8100（本机 Windows 保留 7997–8096，8000 不可用），前端 Vite 5175（避开本机其他项目常占用的 5173/5174），`/api` 代理指向 8100。
 - 本地运行：以 `README.md` 的「本地启动」为准（Docker DB 5433、后端 8100、前端 5175、demo/demo123；客服 agent/agent123；商品与知识种子分别用 `seed_catalog` / `seed_knowledge` 导入）。
 
@@ -87,6 +88,15 @@
 - `docs/implementation-handoff.md`
 - `docs/progress.md`（M0~M4 记录）
 
+M5 已完成，交接要点：
+
+- 上传：`app/modules/uploads/`；校验 MIME + 扩展名 + 魔数 + 大小，UUID 落盘 `backend/static/uploads/`（gitignore，不入库）。新增配置见 `.env.example`：`VISION_MODEL`、`ASR_MODEL`、`MAX_IMAGE_UPLOAD_MB`、`MAX_VOICE_UPLOAD_MB`、`UPLOAD_DIR`。
+- AI 抽象：`VisionClient` / `ASRClient`（`app/ai/vision.py`、`asr.py`）；`AI_PROVIDER=fake` 使用 `FakeVisionClient`（蓝色薄款纯棉衬衫）/ `FakeASRClient`（“推荐几件衬衫”），测试与 E2E 永不访问真实百炼。无 key 图片降级文字搜索，语音返回 502 可重试。
+- 消息：`append_user_message` 对 guide 放开 image/voice 并校验站内上传 URL；support 保持仅文字。图片理解写用户消息 `content.vision`；失败 `meta.degraded=true` 并提示“已按文字条件搜索”。
+- 加购：`slot_state.last_products`（≤8）在 products 事件生成时写入；`GuideQuery.intent=add_to_cart` + `cart` 字段；`guide/cart.py` 负责解析/建动作，`guide/actions.py` 负责 confirm/cancel。确认/取消会同步更新 action_card 消息 content，历史恢复状态正确。
+- SSE 契约：找货（含图片/语音）`meta → token* → products → done`；加购成功 `meta → action → done`（无 token/products）；需澄清时 `meta → token* → done`。确认/取消是普通 JSON，不走 SSE。
+- 测试：后端 215 pytest、前端 build、12 条 E2E（含图片、假麦克风语音、加购成功/幂等/取消/库存不足失败卡）。
+
 M4 已完成，交接要点：
 
 - guide 会话：`POST /api/chat/sessions` 的 `type=guide` 默认复用最近 active；`new=true` 显式新建；guide 不写问候消息；guide escalate 返回 400。SSE 顺序固定 `meta → token* → products → done`。
@@ -97,11 +107,10 @@ M4 已完成，交接要点：
 - 前端：首页 `HomeView.vue` 是导购聊天，空状态组件 `components/guide/GuideEmptyState.vue`，商品卡 `GuideProductCard.vue`，顶部「历史」抽屉支持查看/切换 guide 会话；E2E `guide.spec.ts` 覆盖聊天、历史切换与尺码卡。M4 起首页品类入口是“发送查询”按钮，`catalog.spec.ts` / `commerce.spec.ts` 已改为直达 `/category/1`，新窗口不要改回链接假设。
 - 不要改 M0 认证契约、M1 商品 DTO、M2 交易契约、M3 商品客服契约与 M4 导购 SSE 顺序。
 
-然后进入 M5「图片理解、语音转写、AI 加购」：
+下一步进入 M6「转人工、客服端队列/工作台」：
 
-- 图片/语音：复用 guide 会话；`chat_messages.content_type` 已允许 `image` / `voice`，新增 `POST /api/uploads/image`、`POST /api/uploads/voice`，图片走 Qwen-VL 结构化描述，语音走 Paraformer 转写后回填输入框由用户确认发送。
-- AI 加购：`chat_actions` 表尚未创建，需要新迁移；两阶段 `pending → executed/cancelled`，确认接口幂等；加购 SSE 顺序按设计 `meta → action → done`。
-- 复用 M4 的商品卡、`recommended_size` 与尺码接口；不要重写 M4 guide 检索与 M3 support 管线。
-- 测试/E2E 继续用 `AI_PROVIDER=fake`，真实 key 仅放 `.env`；新增多模态用例不要访问真实 DashScope。
+- 复用 M3 已创建的 `support_tickets`（waiting/connected/closed）与 `chat_sessions.status=waiting_human`，补齐队列排序、客服接入、掉线回队列、工作台消息与 WebSocket。
+- 不要重写 M3 support 管线、M4 guide 检索/尺码、M5 上传与 `chat_actions`；新增客服端页面沿现有 `/agent/*` 角色守卫。
+- 测试/E2E 继续用 `AI_PROVIDER=fake`；真实 key 仅放 `.env`。
 
-M1 已消费 `backend/static/products` 中 300 张商品图，不再做 AI 生图；M2 已完成交易闭环，M3 已完成商品客服，M4 已完成导购聊天，后续模块不重新生成商品图、不改订单状态机与 M3/M4 契约。
+M1 已消费 `backend/static/products` 中 300 张商品图，不再做 AI 生图；M2 已完成交易闭环，M3 已完成商品客服，M4 已完成导购聊天，M5 已完成多模态与加购；后续模块不重新生成商品图、不改订单状态机与 M3/M4/M5 契约。

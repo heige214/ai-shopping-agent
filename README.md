@@ -13,6 +13,7 @@
 - M2 交易域：购物车、收货地址、订单、模拟支付、客服发货、确认收货；商品详情加购/立即购买已接通，客服端提供已支付订单发货页。
 - M3 知识库 + RAG 商品客服：913 篇知识文档 / 1813 个切片，商品 + 一级品类 + 平台三级范围混合检索；LangGraph 受控 Agent（`plan → tools`）按问题选择商品事实、知识检索、尺码库存工具；商品客服页支持 SSE 流式回答、可点击引用/尺码表、反馈、澄清一次与最小转人工（等待工单）。无 DashScope key 时自动降级为本地规则 + 关键词检索。
 - M4 AI 导购：首页改为导购聊天（空状态 + 示例问法 + 品类入口 + 热门商品 + 历史会话抽屉），支持品类/颜色/材质/厚薄/价格/身高体重的自然语言找货与多轮条件合并；结构化过滤 + 商品向量 top30 → RRF → LLM 重排 6~8 张商品卡；无结果按厚薄→材质→价格放宽或澄清一次；商品卡与详情页按用户档案和尺码表给出推荐尺码。
+- M5 多模态与 AI 加购：首页输入栏支持图片（jpg/png/webp ≤5MB，Qwen-VL 识别品类/颜色/材质后并入导购槽位）与语音（MediaRecorder 录音 → Paraformer 转写 → 回填输入框由用户确认发送）；新增两阶段加购 `chat_actions`（pending → executed/cancelled/failed），支持“第二件/这个/显式商品名 + 尺码/数量”，确认幂等、库存不足失败卡与可换尺码。测试与 E2E 使用 `AI_PROVIDER=fake`，不访问真实百炼。
 
 ## 环境要求
 
@@ -71,7 +72,7 @@ python -m scripts.seed_product_embeddings   # 商品级向量；无 key 时保�
 uvicorn app.main:app --reload --port 8100
 ```
 
-AI 配置为可选项：不配置 `DASHSCOPE_API_KEY` 时，客服使用 `LocalSupportLLM`（规则意图 + 片段拼接回答）和关键词检索，仍可完整演示；配置 key 后自动使用 `qwen-plus` + `text-embedding-v3`。如需强制本地/测试模式，可设置 `AI_PROVIDER=local` 或 `AI_PROVIDER=fake`。变量说明见 `backend/.env.example`。
+AI 配置为可选项：不配置 `DASHSCOPE_API_KEY` 时，客服使用 `LocalSupportLLM`（规则意图 + 片段拼接回答）和关键词检索，仍可完整演示；配置 key 后自动使用 `qwen-plus` + `text-embedding-v3`，图片理解使用 `qwen3-vl-flash`，语音转写使用 `paraformer-v2`。如需强制本地/测试模式，可设置 `AI_PROVIDER=local` 或 `AI_PROVIDER=fake`。无 key 时图片会降级为文字搜索并提示，语音转写返回可重试错误；变量说明见 `backend/.env.example`。
 
 #### 配置阿里云百炼（可选）
 
@@ -85,6 +86,11 @@ DASHSCOPE_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
 CHAT_MODEL=qwen-plus
 EMBEDDING_MODEL=text-embedding-v3
 EMBEDDING_DIM=1024
+VISION_MODEL=qwen3-vl-flash
+ASR_MODEL=paraformer-v2
+MAX_IMAGE_UPLOAD_MB=5
+MAX_VOICE_UPLOAD_MB=10
+UPLOAD_DIR=static/uploads
 ```
 
 3. 切换 embedding 模型后必须同时重建知识向量与商品向量，否则新旧向量不可比：
@@ -172,7 +178,7 @@ npx playwright install chromium   # 首次
 npm run test:e2e
 ```
 
-E2E 会自行启动 Vite 与后端（`tests/e2e/start-backend.mjs` 使用 `AI_PROVIDER=fake`，不访问真实 DashScope）；请先停止前端 dev server 与 8100 上的后端，确保 5175 / 8100 端口空闲。测试完成后两个服务自动关闭。
+E2E 会自行启动 Vite 与后端（`tests/e2e/start-backend.mjs` 使用 `AI_PROVIDER=fake`，不访问真实 DashScope）；图片用例使用 `tests/fixtures/sample.png`，语音用例通过 Chromium 假麦克风（`--use-fake-device-for-media-stream`）录音并由 `FakeASRClient` 转写，不依赖真实设备或百炼。请先停止前端 dev server 与 8100 上的后端，确保 5175 / 8100 端口空闲。测试完成后两个服务自动关闭。
 
 ## 停止与重置
 
@@ -255,6 +261,9 @@ deploy/                   # 开发数据库 Docker Compose
 - M4 历史：首页顶部「历史」抽屉列出 `type=guide` 会话（标题/时间/进行中或已结束），点击切换并恢复消息与商品卡；抽屉内可显式新建会话。
 - M4 检索：结构化（品类子树 + 颜色/材质/厚薄 + 价格 + on_sale）+ `products.embedding` 余弦 top30 → RRF → LLM 重排 top8；无结果按厚薄→材质→价格放宽，仍无结果澄清一次。颜色与品类不放宽。
 - M4 尺码：新增 `GET /api/products/{id}/size-recommendation`，按用户身高体重与商品尺码表返回推荐尺码；导购商品卡与商品详情卡展示 `recommended_size/size_reason`，不改 M1 商品 DTO。
-- 商品向量：`seed_product_embeddings.py` 默认只补 NULL，`--reembed` 全量重建；无 key 时保持 NULL，导购检索退化为结构化召回。M4 不做图片/语音、AI 加购与 `chat_actions`（留 M5）。
+- 商品向量：`seed_product_embeddings.py` 默认只补 NULL，`--reembed` 全量重建；无 key 时保持 NULL，导购检索退化为结构化召回。
+- M5 上传：`POST /api/uploads/image`（field `file`）与 `POST /api/uploads/voice` 需登录，校验 MIME + 扩展名 + 魔数 + 大小，UUID 文件名落盘 `backend/static/uploads/`（已 gitignore，不入库）；语音接口同步转写并返回 `{url, transcript}`。目录可定期清理，不影响数据库。
+- M5 图片/语音消息：guide 会话允许 `content_type=image/voice`，support 仍仅文字；图片理解结果写入用户消息 `content.vision`，失败时 SSE `meta.degraded=true` + “图片识别失败，已按文字条件搜索”，不阻塞找货。语音转写只回填输入框，用户编辑确认后才发送。
+- M5 加购：`chat_actions` 迁移 `20261114_0005`；创建动作时校验商品/SKU/库存并写 pending 卡片，SSE `meta → action → done`；`POST /api/chat/actions/{id}/confirm|cancel` 为普通 JSON，非 pending 幂等返回；确认在事务内锁 action/SKU 并复用 `cart_service` 写购物车，库存不足/下架返回 200 + `failed` + 可换尺码，越权返回 404。
 - 当前登录态为 7 天 JWT，存 localStorage（仅为简化实现，生产应改用 HttpOnly Cookie）；refresh token 留到后续安全增强。
 - 启动命令、端口、演示账号或 `.env` 配置变更时，请同步更新本 README；以代码和 `.env.example` 为准。

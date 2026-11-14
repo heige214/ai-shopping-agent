@@ -15,6 +15,7 @@ frontend/playwright-report/
 
 # 商品图与上传文件：体积大，单独备份，不进 git
 backend/static/products/
+backend/static/uploads/
 backend/static/*.png
 backend/uploads/
 

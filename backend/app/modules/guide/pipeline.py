@@ -15,6 +15,8 @@ from app.ai.base import (
     GuideQuery,
     GuideRerank,
     LLMError,
+    VisionClient,
+    VisionResult,
 )
 from app.ai.guide_local import (
     CHITCHAT_TEXT,
@@ -29,6 +31,7 @@ from app.ai.guide_slots import (
 from app.core.config import settings
 from app.modules.auth.models import User
 from app.modules.catalog.models import Category, Product
+from app.modules.guide.cart import stream_cart_turn
 from app.modules.guide.schemas import GuideProductCard
 from app.modules.guide.search import GuideSearchResult, search_products
 from app.modules.guide.size import (
@@ -36,6 +39,7 @@ from app.modules.guide.size import (
     recommend_product_size,
 )
 from app.modules.support.models import ChatMessage, ChatSession
+from app.modules.uploads.service import media_type_for_url, resolve_upload_path
 
 CHITCHAT_QUICK_REPLIES = ["推荐几件衬衫", "通勤双肩包", "跑步运动鞋"]
 EMPTY_QUICK_REPLIES = ["看看衬衫", "看看运动鞋", "看看双肩包"]
@@ -43,6 +47,7 @@ PRICE_QUICK_REPLIES = ["100 元以内", "300 元以内", "不限预算"]
 PRICE_CLARIFY_TEXT = "价格区间不太对，最低价不能高于最高价，能再确认一下预算吗？"
 EMPTY_CLARIFY_TEXT = "没有找到完全匹配的商品。要不要换个品类或预算？"
 DEGRADED_TEXT = "服务繁忙，以上为部分推荐，请稍后再试。"
+IMAGE_FAILED_TEXT = "图片识别失败，已按文字条件搜索。"
 CARD_ATTRIBUTE_KEYS = ("color", "material", "thickness", "fit", "style", "season")
 
 
@@ -163,6 +168,80 @@ def _card(
     )
 
 
+def _message_question(message: ChatMessage) -> str:
+    content = message.content or {}
+    if message.content_type == "voice":
+        return str(content.get("text") or content.get("transcript") or "").strip()
+    return str(content.get("text") or "").strip()
+
+
+def _question_with_vision(question: str, vision: VisionResult) -> str:
+    """把结构化描述拼进解析文本，复用 M4 的本地/LLM 槽位解析。"""
+    parts = [question] if question else []
+    if vision.description:
+        parts.append(vision.description)
+    attribute_words = [
+        value
+        for values in vision.attributes.values()
+        for value in values
+        if value
+    ]
+    if attribute_words:
+        parts.append(" ".join(attribute_words))
+    if vision.category_path:
+        # 只补叶子品类，避免“服装 衬衫”同时命中一级与二级导致品类停在父级
+        parts.append(vision.category_path[-1])
+    return " ".join(parts).strip()
+
+
+def _merge_vision_query(query: GuideQuery, vision: VisionResult) -> GuideQuery:
+    """视觉结构化结果只补空缺；品类路径比文本解析更深时采用视觉结果。"""
+    if vision.category_path and (
+        not query.category_path
+        or (
+            len(vision.category_path) > len(query.category_path)
+            and query.category_path[0] == vision.category_path[0]
+        )
+    ):
+        query.category_path = list(vision.category_path)
+    for key in ("color", "material", "thickness"):
+        values = vision.attributes.get(key) or []
+        if values and not query.filters.get(key):
+            query.filters[key] = list(values)
+    if not query.semantic and vision.description:
+        query.semantic = vision.description
+    return query
+
+
+async def _understand_image(
+    db: AsyncSession,
+    message: ChatMessage,
+    vision_client: VisionClient,
+) -> tuple[VisionResult | None, bool]:
+    """图片理解失败不抛错：返回 (None, True) 让管线降级文字搜索。"""
+    content = dict(message.content or {})
+    image_url = str(content.get("image_url") or "")
+    path = resolve_upload_path(image_url)
+    if path is None or not path.exists():
+        return None, True
+    try:
+        vision = await vision_client.describe_image(
+            path.read_bytes(), media_type_for_url(image_url)
+        )
+    except Exception:
+        return None, True
+    if (
+        not vision.category_path
+        and not vision.attributes
+        and not vision.description
+    ):
+        return None, True
+    content["vision"] = vision.model_dump()
+    message.content = content
+    await db.commit()
+    return vision, False
+
+
 async def stream_guide_turn(
     db: AsyncSession,
     session: ChatSession,
@@ -170,10 +249,19 @@ async def stream_guide_turn(
     user: User,
     llm: GuideLLM,
     embedding_client: EmbeddingClient,
+    vision_client: VisionClient,
 ) -> AsyncIterator[tuple[str, dict[str, Any]]]:
     """执行一轮导购回答，按 meta → token* → products → done 产出 SSE。"""
     started = time.monotonic()
-    question = str(user_message.content.get("text") or "").strip()
+    question = _message_question(user_message)
+    vision: VisionResult | None = None
+    image_failed = False
+    if user_message.content_type == "image":
+        vision, image_failed = await _understand_image(
+            db, user_message, vision_client
+        )
+        if vision is not None:
+            question = _question_with_vision(question, vision)
     slot_state = dict(session.slot_state or {})
     profile = {
         "height_cm": user.height_cm,
@@ -218,6 +306,20 @@ async def stream_guide_turn(
             question, slot_state, profile, category_hint
         )
 
+    if raw_query.intent == "add_to_cart":
+        async for event in stream_cart_turn(
+            db,
+            session,
+            user_message,
+            user,
+            raw_query,
+            slot_state,
+            degraded=degraded,
+        ):
+            yield event
+        return
+    if vision is not None:
+        raw_query = _merge_vision_query(raw_query, vision)
     query = merge_guide_query(previous, raw_query, profile)
     price_bad = (
         query.price.min is not None
@@ -251,6 +353,9 @@ async def stream_guide_turn(
     else:
         relaxed = search_result.relaxed
 
+    if image_failed:
+        degraded = True
+
     yield "meta", {
         "intent": query.intent,
         "query": query.model_dump(),
@@ -258,12 +363,17 @@ async def stream_guide_turn(
         "relaxed": list(relaxed),
         "quick_replies": list(quick_replies),
         "degraded": degraded,
+        "vision": vision.model_dump() if vision is not None else None,
+        "image_failed": image_failed,
     }
     if error_code:
         yield "error", {
             "code": error_code,
             "message": "服务繁忙，正在使用降级结果",
         }
+    if image_failed:
+        answer_text = IMAGE_FAILED_TEXT
+        yield "token", {"text": IMAGE_FAILED_TEXT}
 
     async def finalize() -> AsyncIterator[tuple[str, dict[str, Any]]]:
         latency_ms = int((time.monotonic() - started) * 1000)
@@ -283,11 +393,23 @@ async def stream_guide_turn(
                 "latency_ms": latency_ms,
             },
         )
-        session.slot_state = {
+        state = {
             **slot_state,
             "query": query.model_dump(),
             "clarify_count": clarify_count,
         }
+        if cards:
+            state["last_products"] = [
+                {
+                    "product_id": card.id,
+                    "title": card.title,
+                    "price": card.price,
+                    "main_image": card.main_image,
+                    "recommended_size": card.recommended_size,
+                }
+                for card in cards[:8]
+            ]
+        session.slot_state = state
         session.updated_at = _now()
         db.add(message)
         await db.flush()
@@ -296,8 +418,8 @@ async def stream_guide_turn(
         yield "done", {"message_id": message_id, "latency_ms": latency_ms}
 
     if query.intent == "chitchat":
-        answer_text = CHITCHAT_TEXT
-        async for event in _stream_text(answer_text):
+        answer_text += CHITCHAT_TEXT
+        async for event in _stream_text(CHITCHAT_TEXT):
             yield event
         async for event in finalize():
             yield event
@@ -305,12 +427,11 @@ async def stream_guide_turn(
 
     if price_bad or search_result is None or not search_result.candidates:
         if price_bad:
-            answer_text = (
-                PRICE_CLARIFY_TEXT if need_clarify else NO_RESULT_TEXT
-            )
+            reply = PRICE_CLARIFY_TEXT if need_clarify else NO_RESULT_TEXT
         else:
-            answer_text = EMPTY_CLARIFY_TEXT if need_clarify else NO_RESULT_TEXT
-        async for event in _stream_text(answer_text):
+            reply = EMPTY_CLARIFY_TEXT if need_clarify else NO_RESULT_TEXT
+        answer_text += reply
+        async for event in _stream_text(reply):
             yield event
         async for event in finalize():
             yield event
@@ -354,6 +475,7 @@ async def stream_guide_turn(
         }
         for card in cards
     ]
+    prefix_len = len(answer_text)
     try:
         async with asyncio.timeout(settings.llm_timeout_seconds):
             async for token in llm.stream_guide_answer(
@@ -370,9 +492,10 @@ async def stream_guide_turn(
         fallback = build_local_guide_answer(
             query, product_summaries, relaxed
         )
-        if not answer_text:
-            answer_text = f"{fallback}\n{DEGRADED_TEXT}"
-            async for event in _stream_text(answer_text):
+        if len(answer_text) == prefix_len:
+            suffix = f"{fallback}\n{DEGRADED_TEXT}"
+            answer_text += suffix
+            async for event in _stream_text(suffix):
                 yield event
         else:
             suffix = f"\n{DEGRADED_TEXT}"
@@ -387,16 +510,18 @@ async def stream_guide_turn(
         fallback = build_local_guide_answer(
             query, product_summaries, relaxed
         )
-        if not answer_text:
-            answer_text = f"{fallback}\n{DEGRADED_TEXT}"
-            async for event in _stream_text(answer_text):
+        if len(answer_text) == prefix_len:
+            suffix = f"{fallback}\n{DEGRADED_TEXT}"
+            answer_text += suffix
+            async for event in _stream_text(suffix):
                 yield event
 
-    if not answer_text:
-        answer_text = build_local_guide_answer(
+    if len(answer_text) == prefix_len:
+        fallback = build_local_guide_answer(
             query, product_summaries, relaxed
         )
-        async for event in _stream_text(answer_text):
+        answer_text += fallback
+        async for event in _stream_text(fallback):
             yield event
 
     yield "products", {

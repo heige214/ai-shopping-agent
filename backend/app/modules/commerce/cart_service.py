@@ -114,9 +114,13 @@ def _ensure_on_sale(sku: ProductSku, product: Product) -> None:
 
 
 async def add_cart_item(
-    db: AsyncSession, user: User, data: CartItemCreate
+    db: AsyncSession, user: User, data: CartItemCreate, *, commit: bool = True
 ) -> CartItemOut:
-    """同 SKU 累加数量；加购只校验库存，不锁库存。"""
+    """同 SKU 累加数量；加购只校验库存，不锁库存。
+
+    commit=False 供 chat_actions 确认流程复用，把购物车写入与动作状态
+    放在同一个事务里提交。
+    """
     sku, product = await _load_sku_product(db, data.sku_id)
     _ensure_on_sale(sku, product)
 
@@ -144,7 +148,10 @@ async def add_cart_item(
         cart_item.quantity = new_quantity
 
     try:
-        await db.commit()
+        if commit:
+            await db.commit()
+        else:
+            await db.flush()
     except IntegrityError as exc:
         await db.rollback()
         raise HTTPException(
@@ -152,7 +159,8 @@ async def add_cart_item(
             detail="购物车更新冲突，请重试",
         ) from exc
 
-    await db.refresh(cart_item)
+    if commit:
+        await db.refresh(cart_item)
     return _to_item_out(cart_item, sku, product)
 
 
