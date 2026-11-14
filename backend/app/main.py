@@ -17,6 +17,7 @@ from app.modules.auth.router import router as auth_router
 from app.modules.catalog.router import router as catalog_router
 from app.modules.commerce.router import router as commerce_router
 from app.modules.commerce.timeouts import order_timeout_loop
+from app.modules.support.router import router as support_router
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +57,7 @@ app.add_middleware(
 app.include_router(auth_router, prefix=settings.api_prefix)
 app.include_router(catalog_router, prefix=settings.api_prefix)
 app.include_router(commerce_router, prefix=settings.api_prefix)
+app.include_router(support_router, prefix=settings.api_prefix)
 app.mount(
     "/static",
     StaticFiles(directory=STATIC_DIR, check_dir=False),
