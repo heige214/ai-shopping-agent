@@ -31,6 +31,20 @@
 
 <!-- 每完成一个模块，把记录加在这里的最上面；第一条从 M0 开始。 -->
 
+## 2026-11-14 · M4.1 导购历史会话抽屉
+
+- 状态：已完成（分支 `m4.1-guide-history`，tag `m4.1`）
+- 本次目标：补设计 §11.1.2 的导购会话历史抽屉，支持查看和切换历史会话。
+- 完成内容：
+  - 首页顶部新增「历史」按钮；左侧 Vant popup 列出 `GET /api/chat/sessions?type=guide` 返回的会话，显示标题、更新时间、进行中/已结束，当前会话高亮。
+  - 点击会话切换并加载最近 50 条消息，恢复商品卡；抽屉内可显式新建会话；已结束会话输入禁用。
+  - 无后端、DB、环境变量改动。
+- 改动文件：`frontend/src/views/user/HomeView.vue`、`frontend/tests/e2e/guide.spec.ts`、`README.md`、`docs/progress.md`、`docs/implementation-handoff.md`
+- 测试与验收：前端 `npm run build` 成功；E2E `8 passed`（guide 用例扩展历史抽屉，其余 7 条不回归）。
+- 遗留问题：无。
+- 下一模块依赖：M5 可继续在 guide 会话上增加图片/语音与加购。
+- commit：m4.1 tag（见 `git log`）
+
 ## 2026-11-14 · M4 AI 导购聊天
 
 - 状态：已完成（分支 `m4-guide-agent`，tag `m4`）
@@ -62,7 +76,7 @@
     - “紫色真丝加厚衬衫10元以内” → `relaxed=["厚薄","材质","价格"]`，首次 `need_clarify=true`。
 - 遗留问题：
   - [备注] 商品卡数量受候选池限制；候选 >=8 时为 8 张，精确过滤后可能少于 6 张。
-  - [后续] 导购会话历史抽屉未做，仅“复用最近 active + 新对话”；历史消息可通过会话接口读取。
+  - [已完成] 导购会话历史抽屉已在 M4.1 补齐，见上方记录。
   - [后续] 图片/语音、AI 加购与 `chat_actions` 留 M5；转人工队列/工作台留 M6。
   - [后续] 切换 embedding 模型需手动重跑 `seed_product_embeddings --reembed`。
 - 下一模块依赖：M5 可复用 guide 会话/`slot_state`、商品卡与尺码接口，增加 image/voice content_type 与 `chat_actions` 两阶段加购；M6 复用 `support_tickets`。

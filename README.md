@@ -12,7 +12,7 @@
 - M1 商品域：4 个一级 + 34 个叶子品类、300 个商品、1108 条 SKU、收藏、分类列表、商品详情与可复用商品发现组件。
 - M2 交易域：购物车、收货地址、订单、模拟支付、客服发货、确认收货；商品详情加购/立即购买已接通，客服端提供已支付订单发货页。
 - M3 知识库 + RAG 商品客服：913 篇知识文档 / 1813 个切片，商品 + 一级品类 + 平台三级范围混合检索；LangGraph 受控 Agent（`plan → tools`）按问题选择商品事实、知识检索、尺码库存工具；商品客服页支持 SSE 流式回答、可点击引用/尺码表、反馈、澄清一次与最小转人工（等待工单）。无 DashScope key 时自动降级为本地规则 + 关键词检索。
-- M4 AI 导购：首页改为导购聊天（空状态 + 示例问法 + 品类入口 + 热门商品），支持品类/颜色/材质/厚薄/价格/身高体重的自然语言找货与多轮条件合并；结构化过滤 + 商品向量 top30 → RRF → LLM 重排 6~8 张商品卡；无结果按厚薄→材质→价格放宽或澄清一次；商品卡与详情页按用户档案和尺码表给出推荐尺码。
+- M4 AI 导购：首页改为导购聊天（空状态 + 示例问法 + 品类入口 + 热门商品 + 历史会话抽屉），支持品类/颜色/材质/厚薄/价格/身高体重的自然语言找货与多轮条件合并；结构化过滤 + 商品向量 top30 → RRF → LLM 重排 6~8 张商品卡；无结果按厚薄→材质→价格放宽或澄清一次；商品卡与详情页按用户档案和尺码表给出推荐尺码。
 
 ## 环境要求
 
@@ -252,6 +252,7 @@ deploy/                   # 开发数据库 Docker Compose
 - M3 客服：`/product/:id/support` 使用 fetch + ReadableStream 解析 POST SSE；会话按 `user_id` 隔离，同商品复用最近 active 会话。M3 仅文本与最小转人工，队列/客服工作台/WebSocket/会话总结留 M6。
 - M3 Agent：`backend/app/modules/support/agent.py` 使用 `langgraph` 的 `StateGraph` 执行 `plan → tools`；规划模型选择 `product_facts` / `search_knowledge` / `size_stock`，尺码库存问题优先走确定性事实层，引用按问题主题过滤。独立意图和可回答性模型调用已移除。
 - M4 导购：首页 `/` 为导购聊天；`POST /api/chat/sessions` 的 `type=guide` 默认复用最近 active 会话，`new=true` 显式新建，guide 不写问候消息，escalate 返回 400。SSE 顺序固定为 `meta → token* → products → done`。
+- M4 历史：首页顶部「历史」抽屉列出 `type=guide` 会话（标题/时间/进行中或已结束），点击切换并恢复消息与商品卡；抽屉内可显式新建会话。
 - M4 检索：结构化（品类子树 + 颜色/材质/厚薄 + 价格 + on_sale）+ `products.embedding` 余弦 top30 → RRF → LLM 重排 top8；无结果按厚薄→材质→价格放宽，仍无结果澄清一次。颜色与品类不放宽。
 - M4 尺码：新增 `GET /api/products/{id}/size-recommendation`，按用户身高体重与商品尺码表返回推荐尺码；导购商品卡与商品详情卡展示 `recommended_size/size_reason`，不改 M1 商品 DTO。
 - 商品向量：`seed_product_embeddings.py` 默认只补 NULL，`--reembed` 全量重建；无 key 时保持 NULL，导购检索退化为结构化召回。M4 不做图片/语音、AI 加购与 `chat_actions`（留 M5）。
