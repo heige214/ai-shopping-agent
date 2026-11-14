@@ -8,7 +8,8 @@ from app.db.session import get_db
 from app.modules.auth.deps import get_current_user
 from app.modules.auth.models import User
 from app.modules.catalog.models import Product
-from app.modules.guide.schemas import SizeRecommendationOut
+from app.modules.guide.actions import cancel_action, confirm_action
+from app.modules.guide.schemas import ChatActionOut, SizeRecommendationOut
 from app.modules.guide.size import recommend_product_size
 
 router = APIRouter(tags=["guide"])
@@ -44,3 +45,27 @@ async def size_recommendation(
         weight_kg=current_user.weight_kg,
         usual_size=current_user.usual_size,
     )
+
+
+@router.post(
+    "/chat/actions/{action_id}/confirm", response_model=ChatActionOut
+)
+async def confirm_chat_action(
+    action_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> ChatActionOut:
+    """确认加购；非 pending 直接返回当前状态，不重复加购。"""
+    return await confirm_action(db, current_user, action_id)
+
+
+@router.post(
+    "/chat/actions/{action_id}/cancel", response_model=ChatActionOut
+)
+async def cancel_chat_action(
+    action_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> ChatActionOut:
+    """取消加购；非 pending 幂等返回当前状态。"""
+    return await cancel_action(db, current_user, action_id)

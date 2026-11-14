@@ -31,6 +31,7 @@ from app.ai.guide_slots import (
 from app.core.config import settings
 from app.modules.auth.models import User
 from app.modules.catalog.models import Category, Product
+from app.modules.guide.cart import stream_cart_turn
 from app.modules.guide.schemas import GuideProductCard
 from app.modules.guide.search import GuideSearchResult, search_products
 from app.modules.guide.size import (
@@ -305,6 +306,18 @@ async def stream_guide_turn(
             question, slot_state, profile, category_hint
         )
 
+    if raw_query.intent == "add_to_cart":
+        async for event in stream_cart_turn(
+            db,
+            session,
+            user_message,
+            user,
+            raw_query,
+            slot_state,
+            degraded=degraded,
+        ):
+            yield event
+        return
     if vision is not None:
         raw_query = _merge_vision_query(raw_query, vision)
     query = merge_guide_query(previous, raw_query, profile)
@@ -380,11 +393,23 @@ async def stream_guide_turn(
                 "latency_ms": latency_ms,
             },
         )
-        session.slot_state = {
+        state = {
             **slot_state,
             "query": query.model_dump(),
             "clarify_count": clarify_count,
         }
+        if cards:
+            state["last_products"] = [
+                {
+                    "product_id": card.id,
+                    "title": card.title,
+                    "price": card.price,
+                    "main_image": card.main_image,
+                    "recommended_size": card.recommended_size,
+                }
+                for card in cards[:8]
+            ]
+        session.slot_state = state
         session.updated_at = _now()
         db.add(message)
         await db.flush()

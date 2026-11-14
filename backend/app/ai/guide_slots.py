@@ -3,7 +3,12 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from app.ai.base import GuidePrice, GuideQuery, GuideSizeProfile
+from app.ai.base import (
+    GuideCartQuery,
+    GuidePrice,
+    GuideQuery,
+    GuideSizeProfile,
+)
 
 ALLOWED_FILTER_KEYS = ("color", "material", "thickness")
 
@@ -43,6 +48,129 @@ RESET_WORDS = (
     "从头",
 )
 PRICE_CLEAR_WORDS = ("不限预算", "价格不限", "预算不限", "不限价格")
+
+CART_WORDS = (
+    "加入购物车",
+    "加到购物车",
+    "放入购物车",
+    "放到购物车",
+    "加购",
+    "购物车",
+)
+CART_DEICTIC_WORDS = ("这个", "这件", "这款", "它", "那个", "那件")
+ORDINAL_PATTERN = re.compile(
+    r"第\s*([0-9一二两三四五六七八九十]+)\s*(?:件|个|款)"
+)
+SIZE_PATTERN = re.compile(
+    r"(?:尺码|码数)?\s*(XXXL|XXL|XL|XS|S|M|L|均码|\d{2,3})\s*码",
+    re.IGNORECASE,
+)
+QUANTITY_PATTERN = re.compile(
+    r"(?:要|买|加|来|共|总共)?\s*([0-9一二两三四五六七八九十]+)\s*"
+    r"(?:件|个|双|条|只)"
+)
+CHINESE_DIGITS = {
+    "零": 0,
+    "一": 1,
+    "二": 2,
+    "两": 2,
+    "三": 3,
+    "四": 4,
+    "五": 5,
+    "六": 6,
+    "七": 7,
+    "八": 8,
+    "九": 9,
+}
+
+
+def _to_number(text: str) -> int | None:
+    text = text.strip()
+    if text.isdigit():
+        return int(text)
+    if not text:
+        return None
+    if text == "十":
+        return 10
+    if "十" in text:
+        left, _, right = text.partition("十")
+        tens = CHINESE_DIGITS.get(left, 1) if left else 1
+        ones = CHINESE_DIGITS.get(right, 0) if right else 0
+        return tens * 10 + ones
+    if len(text) == 1:
+        return CHINESE_DIGITS.get(text)
+    return None
+
+
+def _parse_cart_command(text: str) -> GuideCartQuery | None:
+    """解析“把第二件 L 码加入购物车，要两件”这类加购指令。"""
+    lowered = text.lower()
+    if not any(word in lowered for word in CART_WORDS):
+        return None
+
+    ordinal: int | None = None
+    ordinal_match = ORDINAL_PATTERN.search(text)
+    if ordinal_match:
+        ordinal = _to_number(ordinal_match.group(1))
+
+    size_match = SIZE_PATTERN.search(text)
+    size = size_match.group(1) if size_match else None
+
+    remaining = ORDINAL_PATTERN.sub(" ", text)
+    if size_match:
+        remaining = remaining.replace(size_match.group(0), " ")
+    quantity_match = QUANTITY_PATTERN.search(remaining)
+    quantity = 1
+    if quantity_match:
+        parsed = _to_number(quantity_match.group(1))
+        if parsed is not None:
+            quantity = max(1, min(parsed, 99))
+        remaining = remaining.replace(quantity_match.group(0), " ")
+
+    if ordinal is not None:
+        return GuideCartQuery(
+            reference="ordinal",
+            ordinal=ordinal,
+            size=size,
+            quantity=quantity,
+        )
+
+    name = remaining
+    for word in CART_WORDS:
+        name = name.replace(word, " ")
+    for word in CART_DEICTIC_WORDS:
+        name = name.replace(word, " ")
+    name = name.strip(" ，,。.!！?？、；;：:\t\r\n")
+    for prefix in (
+        "请帮我",
+        "帮我",
+        "麻烦",
+        "我想要",
+        "我要",
+        "想要",
+        "把",
+        "将",
+        "给",
+        "想",
+        "要",
+        "买",
+    ):
+        if name.startswith(prefix):
+            name = name[len(prefix) :].strip()
+    name = re.sub(r"[，,。.!！?？、；;：:\s]+", "", name)
+    if name:
+        return GuideCartQuery(
+            reference="name",
+            product_name=name,
+            size=size,
+            quantity=quantity,
+        )
+
+    if any(word in text for word in CART_DEICTIC_WORDS):
+        return GuideCartQuery(
+            reference="deictic", size=size, quantity=quantity
+        )
+    return GuideCartQuery(reference="none", size=size, quantity=quantity)
 
 COLOR_WORDS = (
     "浅蓝",
@@ -224,6 +352,11 @@ def extract_local_guide_query(
     """无 key / Fake 模式下的确定性槽位解析。"""
     text = (message or "").strip()
     lowered = text.lower()
+    cart = _parse_cart_command(text)
+    if cart is not None:
+        return GuideQuery(
+            intent="add_to_cart", semantic=text or None, cart=cart
+        )
     if any(word in lowered for word in CHITCHAT_WORDS):
         return GuideQuery(intent="chitchat", semantic=text or None)
 
@@ -274,6 +407,8 @@ def merge_guide_query(
 ) -> GuideQuery:
     """合并多轮槽位：新条件覆盖旧条件，切换品类时清空旧筛选。"""
     profile = profile or {}
+    if new.intent == "add_to_cart":
+        return new.model_copy(deep=True)
     if previous is None or new.intent == "chitchat":
         merged = new.model_copy(deep=True)
     else:

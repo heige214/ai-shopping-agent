@@ -27,6 +27,17 @@ class GuideProductsPayload(BaseModel):
     query: dict[str, Any] = Field(default_factory=dict)
 
 
+class ChatActionOut(BaseModel):
+    """确认/取消动作的返回；非 pending 时也返回当前状态（幂等）。"""
+
+    action_id: int
+    status: str
+    result: dict[str, Any] = Field(default_factory=dict)
+    quantity: int | None = None
+    cart_item_id: int | None = None
+    available_sizes: list[str] = Field(default_factory=list)
+
+
 class SizeRecommendationOut(BaseModel):
     product_id: int
     recommended_size: str | None = None

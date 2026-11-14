@@ -36,7 +36,18 @@ SupportAction = Literal["rag", "handoff", "chitchat", "clarify"]
 ToolName = Literal["product_facts", "search_knowledge", "size_stock"]
 HandoffKind = Literal["order", "complaint"]
 
-GuideIntent = Literal["search", "refine", "chitchat"]
+GuideIntent = Literal["search", "refine", "chitchat", "add_to_cart"]
+CartReference = Literal["ordinal", "name", "deictic", "none"]
+
+
+class GuideCartQuery(BaseModel):
+    """加购指令：商品引用方式、第 N 件、尺码与数量。"""
+
+    reference: CartReference = "none"
+    ordinal: int | None = Field(default=None, ge=1, le=99)
+    product_name: str | None = None
+    size: str | None = None
+    quantity: int = Field(default=1, ge=1, le=99)
 
 
 class VisionResult(BaseModel):
@@ -97,6 +108,7 @@ class GuideQuery(BaseModel):
     filters: dict[str, list[str]] = Field(default_factory=dict)
     price: GuidePrice = Field(default_factory=GuidePrice)
     size_profile: GuideSizeProfile = Field(default_factory=GuideSizeProfile)
+    cart: GuideCartQuery | None = None
 
 
 class GuideRerankItem(BaseModel):
