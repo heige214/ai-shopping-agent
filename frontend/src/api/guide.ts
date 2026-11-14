@@ -1,7 +1,15 @@
 import http from '@/api/http'
-import type { SizeRecommendation } from '@/types/guide'
+import type {
+  ChatActionResponse,
+  SizeRecommendation,
+} from '@/types/guide'
 import type { ChatSession, MessagePage } from '@/types/support'
 import { streamPost, type SSEHandler } from '@/utils/sse'
+
+export interface GuideMessagePayload {
+  content_type: 'text' | 'image' | 'voice'
+  content: Record<string, unknown>
+}
 
 export async function createGuideSession(
   newSession = false,
@@ -33,16 +41,34 @@ export async function fetchGuideMessages(
 
 export async function sendGuideMessage(
   sessionId: number,
-  text: string,
+  payload: GuideMessagePayload,
   onEvent: SSEHandler,
   signal?: AbortSignal,
 ): Promise<void> {
   await streamPost(
     `/chat/sessions/${sessionId}/messages`,
-    { content_type: 'text', content: { text } },
+    payload,
     onEvent,
     signal,
   )
+}
+
+export async function confirmChatAction(
+  actionId: number,
+): Promise<ChatActionResponse> {
+  const { data } = await http.post<ChatActionResponse>(
+    `/chat/actions/${actionId}/confirm`,
+  )
+  return data
+}
+
+export async function cancelChatAction(
+  actionId: number,
+): Promise<ChatActionResponse> {
+  const { data } = await http.post<ChatActionResponse>(
+    `/chat/actions/${actionId}/cancel`,
+  )
+  return data
 }
 
 export async function fetchSizeRecommendation(

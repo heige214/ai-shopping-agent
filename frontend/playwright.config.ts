@@ -10,6 +10,14 @@ export default defineConfig({
     baseURL: 'http://localhost:5175',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
+    // 语音 E2E 使用 Chromium 假麦克风，不依赖真实设备
+    permissions: ['microphone'],
+    launchOptions: {
+      args: [
+        '--use-fake-device-for-media-stream',
+        '--use-fake-ui-for-media-stream',
+      ],
+    },
   },
   projects: [
     {
