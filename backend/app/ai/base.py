@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import AsyncIterator
 from typing import Literal, Protocol
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 IntentName = Literal[
     "product_qa",
@@ -37,6 +37,40 @@ ToolName = Literal["product_facts", "search_knowledge", "size_stock"]
 HandoffKind = Literal["order", "complaint"]
 
 GuideIntent = Literal["search", "refine", "chitchat"]
+
+
+class VisionResult(BaseModel):
+    """图片理解结果：品类、属性、描述与置信度。"""
+
+    category_path: list[str] = Field(default_factory=list)
+    attributes: dict[str, list[str]] = Field(default_factory=dict)
+    description: str = ""
+    confidence: float = Field(default=0.0, ge=0.0, le=1.0)
+
+    @field_validator("category_path", mode="before")
+    @classmethod
+    def normalize_category_path(cls, value: object) -> list[str]:
+        if value is None:
+            return []
+        if isinstance(value, str):
+            return [value] if value.strip() else []
+        return [str(item) for item in value if str(item).strip()]
+
+    @field_validator("attributes", mode="before")
+    @classmethod
+    def normalize_attributes(cls, value: object) -> dict[str, list[str]]:
+        """兼容模型输出字符串或数组，统一转成字符串数组。"""
+        if not isinstance(value, dict):
+            return {}
+        result: dict[str, list[str]] = {}
+        for key, raw in value.items():
+            values = [raw] if isinstance(raw, (str, int, float)) else raw
+            if not isinstance(values, (list, tuple)):
+                continue
+            cleaned = [str(item).strip() for item in values if str(item).strip()]
+            if cleaned:
+                result[str(key)] = cleaned
+        return result
 
 
 class GuidePrice(BaseModel):
@@ -94,6 +128,18 @@ class LLMTimeoutError(LLMError):
     code = "LLM_TIMEOUT"
 
 
+class VisionError(LLMError):
+    """图片理解失败；导购管线降级为文字搜索。"""
+
+    code = "VISION_ERROR"
+
+
+class ASRError(LLMError):
+    """语音转写失败；上传接口返回可重试错误。"""
+
+    code = "ASR_ERROR"
+
+
 class SupportLLM(Protocol):
     """商品客服所需的最小 LLM 能力，便于 DashScope/本地/Fake 切换。"""
 
@@ -119,6 +165,24 @@ class SupportLLM(Protocol):
         chunks_text: str,
         partial: bool,
     ) -> AsyncIterator[str]:
+        ...
+
+
+class VisionClient(Protocol):
+    """图片理解能力：输入原始字节，输出结构化商品描述。"""
+
+    async def describe_image(
+        self, image_bytes: bytes, mime_type: str
+    ) -> VisionResult:
+        ...
+
+
+class ASRClient(Protocol):
+    """语音转写能力：输入音频字节，输出文本。"""
+
+    async def transcribe(
+        self, audio_bytes: bytes, mime_type: str, filename: str
+    ) -> str:
         ...
 
 

@@ -2,16 +2,23 @@ from __future__ import annotations
 
 import logging
 
-from app.ai.base import EmbeddingClient, GuideLLM, SupportLLM
+from app.ai.base import ASRClient, EmbeddingClient, GuideLLM, SupportLLM, VisionClient
+from app.ai.asr import DashScopeASRClient, LocalASRClient
 from app.ai.dashscope import DashScopeSupportLLM
 from app.ai.embeddings import (
     DashScopeEmbeddingClient,
     FakeEmbeddingClient,
     NoopEmbeddingClient,
 )
-from app.ai.fake import FakeGuideLLM, FakeSupportLLM
+from app.ai.fake import (
+    FakeASRClient,
+    FakeGuideLLM,
+    FakeSupportLLM,
+    FakeVisionClient,
+)
 from app.ai.guide_local import LocalGuideLLM
 from app.ai.local import LocalSupportLLM
+from app.ai.vision import DashScopeVisionClient, LocalVisionClient
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -55,6 +62,34 @@ def get_guide_llm() -> GuideLLM:
     if settings.ai_provider == "dashscope":
         logger.warning("AI_PROVIDER=dashscope 但未配置 DASHSCOPE_API_KEY，使用本地导购规则")
     return LocalGuideLLM()
+
+
+def get_vision_client() -> VisionClient:
+    """FastAPI 依赖：图片理解；fake 用于测试与 E2E。"""
+    if settings.ai_provider == "fake":
+        return FakeVisionClient()
+    if _dashscope_enabled():
+        return DashScopeVisionClient(
+            api_key=settings.dashscope_api_key or "",
+            base_url=settings.dashscope_base_url,
+            model=settings.vision_model,
+            timeout_seconds=settings.llm_timeout_seconds,
+        )
+    return LocalVisionClient()
+
+
+def get_asr_client() -> ASRClient:
+    """FastAPI 依赖：语音转写；无 key 时明确失败，不伪造转写。"""
+    if settings.ai_provider == "fake":
+        return FakeASRClient()
+    if _dashscope_enabled():
+        return DashScopeASRClient(
+            api_key=settings.dashscope_api_key or "",
+            native_base_url=settings.dashscope_native_base_url,
+            model=settings.asr_model,
+            timeout_seconds=max(settings.llm_timeout_seconds, 60.0),
+        )
+    return LocalASRClient()
 
 
 def get_embedding_client() -> EmbeddingClient:

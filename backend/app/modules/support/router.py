@@ -8,11 +8,12 @@ from fastapi import APIRouter, Depends, Query, Response, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.ai.base import EmbeddingClient, GuideLLM, SupportLLM
+from app.ai.base import EmbeddingClient, GuideLLM, SupportLLM, VisionClient
 from app.ai.deps import (
     get_embedding_client,
     get_guide_llm,
     get_support_llm,
+    get_vision_client,
 )
 from app.db.session import get_db
 from app.modules.auth.deps import get_current_user
@@ -83,8 +84,9 @@ async def send_message(
     llm: SupportLLM = Depends(get_support_llm),
     guide_llm: GuideLLM = Depends(get_guide_llm),
     embedding_client: EmbeddingClient = Depends(get_embedding_client),
+    vision_client: VisionClient = Depends(get_vision_client),
 ) -> StreamingResponse:
-    """发送文字消息并以 SSE 返回 AI 回答；按会话类型分流客服/导购。"""
+    """发送消息并以 SSE 返回 AI 回答；guide 支持图片/语音，support 仅文字。"""
     session, user_message = await service.append_user_message(
         db, current_user, session_id, data
     )
@@ -98,6 +100,7 @@ async def send_message(
                 current_user,
                 guide_llm,
                 embedding_client,
+                vision_client,
             )
         else:
             events = stream_support_turn(

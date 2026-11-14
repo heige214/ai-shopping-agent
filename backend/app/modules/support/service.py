@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from pathlib import Path
 
 from fastapi import HTTPException, status
 from sqlalchemy import select
@@ -9,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.modules.auth.models import User
 from app.modules.catalog.models import Product
 from app.modules.support.models import ChatMessage, ChatSession, SupportTicket
+from app.modules.uploads.service import resolve_upload_path
 from app.modules.support.schemas import (
     MessageCreate,
     MessageOut,
@@ -19,6 +21,32 @@ from app.modules.support.schemas import (
 )
 
 GREETING_TEMPLATE = "你好，我是{title}的 AI 客服。商品参数、尺码、洗护或平台政策都可以问我。"
+IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".webp"}
+VOICE_SUFFIXES = {".webm", ".mp4", ".wav"}
+MAX_MESSAGE_TEXT = 2000
+
+
+def _upload_url(url: object, suffixes: set[str]) -> str | None:
+    """校验上传 URL 指向本站 uploads 目录且扩展名合法。"""
+    text = str(url or "").strip()
+    path = resolve_upload_path(text)
+    if path is None or path.suffix.lower() not in suffixes:
+        return None
+    return text
+
+
+def _clean_text(value: object, *, required: bool = False) -> str:
+    text = str(value or "").strip()
+    if required and not text:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="消息不能为空"
+        )
+    if len(text) > MAX_MESSAGE_TEXT:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"消息不能超过 {MAX_MESSAGE_TEXT} 字",
+        )
+    return text
 
 
 def _now() -> datetime:
@@ -221,31 +249,62 @@ async def append_user_message(
             else "会话已结束，请重新发起咨询"
         )
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=detail)
-    if data.content_type != "text":
+    if data.content_type not in ("text", "image", "voice"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="当前仅支持文字消息",
+            detail="不支持的消息类型",
         )
-    text = str((data.content or {}).get("text") or "").strip()
-    if not text:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="消息不能为空"
-        )
-    if len(text) > 2000:
+    if session.type != "guide" and data.content_type != "text":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="消息不能超过 2000 字",
+            detail="商品客服仅支持文字消息",
         )
+
+    raw = data.content or {}
+    content: dict
+    if data.content_type == "text":
+        text = _clean_text(raw.get("text"), required=True)
+        content = {"text": text}
+    elif data.content_type == "image":
+        image_url = _upload_url(raw.get("image_url"), IMAGE_SUFFIXES)
+        if image_url is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="图片地址无效，请重新上传",
+            )
+        text = _clean_text(raw.get("text"))
+        content = {"image_url": image_url}
+        if text:
+            content["text"] = text
+    else:
+        audio_url = _upload_url(raw.get("audio_url"), VOICE_SUFFIXES)
+        if audio_url is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="语音地址无效，请重新录制",
+            )
+        transcript = _clean_text(raw.get("transcript"), required=True)
+        text = _clean_text(raw.get("text")) or transcript
+        content = {
+            "audio_url": audio_url,
+            "transcript": transcript,
+            "text": text,
+        }
 
     message = ChatMessage(
         session_id=session.id,
         sender_type="user",
-        content_type="text",
-        content={"text": text},
+        content_type=data.content_type,
+        content=content,
         meta={},
     )
     if not session.title:
-        session.title = text[:50]
+        if data.content_type == "image":
+            session.title = (content.get("text") or "图片找货")[:50]
+        elif data.content_type == "voice":
+            session.title = str(content["text"])[:50]
+        else:
+            session.title = str(content["text"])[:50]
     session.updated_at = _now()
     db.add(message)
     await db.commit()
