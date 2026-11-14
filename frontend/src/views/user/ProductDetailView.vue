@@ -4,12 +4,14 @@ import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
 
 import { fetchProduct } from '@/api/catalog'
+import { fetchSizeRecommendation } from '@/api/guide'
 import ProductImage from '@/components/catalog/ProductImage.vue'
 import CartBadge from '@/components/commerce/CartBadge.vue'
 import { useCartStore } from '@/stores/cart'
 import { useFavoritesStore } from '@/stores/favorites'
 import type { ProductDetail, ProductSku, SizeChartRow } from '@/types/catalog'
 import type { CartItem } from '@/types/commerce'
+import type { SizeRecommendation } from '@/types/guide'
 import { colorHex } from '@/utils/colors'
 import { getErrorMessage } from '@/utils/error'
 import { formatAttributeValue, formatPrice, formatRange } from '@/utils/format'
@@ -27,6 +29,7 @@ const selectedSize = ref('')
 const favorited = ref(false)
 const showSizeChart = ref(false)
 const adding = ref(false)
+const sizeRecommendation = ref<SizeRecommendation | null>(null)
 
 const colors = computed(() => {
   const seen = new Set<string>()
@@ -57,6 +60,16 @@ const showSizeSelector = computed(() => {
     return true
   }
   return sizesForColor.value.length === 1 && sizesForColor.value[0].size !== '均码'
+})
+
+const recommendedSizeAvailable = computed(() => {
+  const size = sizeRecommendation.value?.recommended_size
+  return Boolean(
+    size &&
+      sizesForColor.value.some(
+        (sku) => sku.size === size && sku.stock > 0,
+      ),
+  )
 })
 
 const subtitle = computed(() => {
@@ -119,6 +132,13 @@ function goBack(): void {
 
 function selectSize(size: string): void {
   selectedSize.value = size
+}
+
+function applyRecommendation(): void {
+  const size = sizeRecommendation.value?.recommended_size
+  if (size) {
+    selectedSize.value = size
+  }
 }
 
 async function toggleFavorite(): Promise<void> {
@@ -190,6 +210,7 @@ async function loadFavoriteState(id: number): Promise<void> {
 async function loadProduct(): Promise<void> {
   loading.value = true
   errorMessage.value = ''
+  sizeRecommendation.value = null
   try {
     const detail = await fetchProduct(Number(route.params.id))
     product.value = detail
@@ -198,6 +219,13 @@ async function loadProduct(): Promise<void> {
     selectedSize.value =
       sizes.find((sku) => sku.stock > 0)?.size ?? sizes[0]?.size ?? ''
     favorited.value = detail.is_favorited
+    void fetchSizeRecommendation(detail.id)
+      .then((recommendation) => {
+        sizeRecommendation.value = recommendation
+      })
+      .catch(() => {
+        sizeRecommendation.value = null
+      })
     await loadFavoriteState(detail.id)
   } catch (error) {
     errorMessage.value = getErrorMessage(error)
@@ -302,6 +330,63 @@ onMounted(() => {
               <span v-else class="out-of-stock">当前尺码缺货</span>
             </template>
           </div>
+
+          <section v-if="sizeRecommendation" class="size-recommend-card">
+            <div class="size-recommend-avatar" aria-hidden="true">AI</div>
+            <div class="size-recommend-body">
+              <div class="size-recommend-head">
+                <span class="size-recommend-title">
+                  {{
+                    sizeRecommendation.recommended_size
+                      ? `推荐 ${sizeRecommendation.recommended_size} 码`
+                      : '尺码推荐'
+                  }}
+                </span>
+                <span
+                  v-if="sizeRecommendation.source === 'profile'"
+                  class="size-recommend-tag"
+                >
+                  按身材档案
+                </span>
+                <span
+                  v-else-if="sizeRecommendation.source === 'usual_size'"
+                  class="size-recommend-tag"
+                >
+                  按常穿尺码
+                </span>
+              </div>
+              <p class="size-recommend-reason">
+                {{ sizeRecommendation.size_reason }}
+              </p>
+              <button
+                v-if="
+                  sizeRecommendation.recommended_size &&
+                  recommendedSizeAvailable
+                "
+                type="button"
+                class="size-recommend-action"
+                @click="applyRecommendation"
+              >
+                选择 {{ sizeRecommendation.recommended_size }} 码
+              </button>
+              <p
+                v-else-if="sizeRecommendation.recommended_size"
+                class="size-recommend-note"
+              >
+                当前颜色暂无该尺码，可切换颜色查看
+              </p>
+              <router-link
+                v-else-if="
+                  !sizeRecommendation.height_cm ||
+                  !sizeRecommendation.weight_kg
+                "
+                to="/me"
+                class="size-recommend-link"
+              >
+                去完善身材档案
+              </router-link>
+            </div>
+          </section>
 
           <div class="attribute-table">
             <div
@@ -571,6 +656,90 @@ onMounted(() => {
 
 .out-of-stock {
   color: var(--color-price);
+}
+
+.size-recommend-card {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 11px 12px;
+  border-radius: 12px;
+  background: var(--color-primary-soft);
+  border: 1px solid var(--color-primary-border);
+}
+
+.size-recommend-avatar {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--color-primary-gradient);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.size-recommend-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.size-recommend-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.size-recommend-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.size-recommend-tag {
+  font-size: 8.5px;
+  color: var(--color-primary);
+  background: #fff;
+  border: 1px solid var(--color-primary-border);
+  border-radius: 5px;
+  padding: 1px 4px;
+}
+
+.size-recommend-reason {
+  margin: 4px 0 0;
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+.size-recommend-action {
+  margin-top: 7px;
+  border: 0;
+  border-radius: 7px;
+  background: var(--color-primary-gradient);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 6px 10px;
+}
+
+.size-recommend-link {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 10.5px;
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.size-recommend-note {
+  margin: 5px 0 0;
+  font-size: 10px;
+  color: var(--color-text-tertiary);
 }
 
 .attribute-table {

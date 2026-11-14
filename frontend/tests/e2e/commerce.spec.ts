@@ -53,8 +53,8 @@ test('完整交易链路：加购 → 结算 → 下单 → 支付 → 客服发
   await expect(page).toHaveURL('/')
   await expect(page.getByText('你好，小鹿')).toBeVisible()
 
-  // 分类 → 商品详情 → 加购
-  await page.getByRole('link', { name: /服装/ }).first().click()
+  // 分类 → 商品详情 → 加购（M4 起首页分类入口改为发送查询，分类页直接访问）
+  await page.goto('/category/1')
   await expect(page).toHaveURL(/\/category\/\d+/)
   await expect(page.locator('.product-card').first()).toBeVisible()
   await page.locator('.product-card').first().click()
