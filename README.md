@@ -11,7 +11,7 @@
 - M0 项目骨架：登录 / 注册、双 Tab 空壳、PostgreSQL + Alembic、pytest、Playwright。
 - M1 商品域：4 个一级 + 34 个叶子品类、300 个商品、1108 条 SKU、收藏、分类列表、商品详情与可复用商品发现组件。
 - M2 交易域：购物车、收货地址、订单、模拟支付、客服发货、确认收货；商品详情加购/立即购买已接通，客服端提供已支付订单发货页。
-- M3 知识库 + RAG 商品客服：913 篇知识文档 / 1813 个切片，商品 + 一级品类 + 平台三级范围混合检索；商品客服页支持 SSE 流式回答、引用、反馈、澄清一次与最小转人工（等待工单）。无 DashScope key 时自动降级为本地规则 + 关键词检索。
+- M3 知识库 + RAG 商品客服：913 篇知识文档 / 1813 个切片，商品 + 一级品类 + 平台三级范围混合检索；LangGraph 受控 Agent（`plan → tools`）按问题选择商品事实、知识检索、尺码库存工具；商品客服页支持 SSE 流式回答、可点击引用/尺码表、反馈、澄清一次与最小转人工（等待工单）。无 DashScope key 时自动降级为本地规则 + 关键词检索。
 
 ## 环境要求
 
@@ -70,6 +70,30 @@ uvicorn app.main:app --reload --port 8100
 ```
 
 AI 配置为可选项：不配置 `DASHSCOPE_API_KEY` 时，客服使用 `LocalSupportLLM`（规则意图 + 片段拼接回答）和关键词检索，仍可完整演示；配置 key 后自动使用 `qwen-plus` + `text-embedding-v3`。如需强制本地/测试模式，可设置 `AI_PROVIDER=local` 或 `AI_PROVIDER=fake`。变量说明见 `backend/.env.example`。
+
+#### 配置阿里云百炼（可选）
+
+1. 在阿里云百炼控制台创建 API Key。
+2. 写入 `backend/.env`（该文件已被 gitignore）：
+
+```bash
+AI_PROVIDER=auto
+DASHSCOPE_API_KEY=sk-你的Key
+DASHSCOPE_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+CHAT_MODEL=qwen-plus
+EMBEDDING_MODEL=text-embedding-v3
+EMBEDDING_DIM=1024
+```
+
+3. 切换 embedding 模型后必须重建知识向量，否则新旧向量不可比：
+
+```bash
+cd backend
+source .venv/Scripts/activate
+python -m scripts.seed_knowledge --reembed
+```
+
+4. 重启后端使其读取新环境变量。
 
 健康检查：<http://localhost:8100/api/health>
 
@@ -212,5 +236,6 @@ deploy/                   # 开发数据库 Docker Compose
 - M3 知识库：`build_knowledge_seed.py` 由商品/品类 JSON 确定性生成 300 商品详情 + 300 尺码 + 900 商品 FAQ + 4 一级品类洗护 + 9 平台政策，共 913 文档 / 1813 切片；24 条品类 FAQ 草稿标 pending，留在 `category_faq_drafts.json`，不进入检索。审核清单见 `review.csv`。
 - M3 检索：向量 top20 + jieba/tsvector 关键词 top20 → RRF 融合取 top8；范围固定为当前商品、其一级品类、平台，不跨商品/跨一级品类。无 embedding 时自动退化为关键词检索。
 - M3 客服：`/product/:id/support` 使用 fetch + ReadableStream 解析 POST SSE；会话按 `user_id` 隔离，同商品复用最近 active 会话。M3 仅文本与最小转人工，队列/客服工作台/WebSocket/会话总结留 M6。
+- M3 Agent：`backend/app/modules/support/agent.py` 使用 `langgraph` 的 `StateGraph` 执行 `plan → tools`；规划模型选择 `product_facts` / `search_knowledge` / `size_stock`，尺码库存问题优先走确定性事实层，引用按问题主题过滤。独立意图和可回答性模型调用已移除。
 - 当前登录态为 7 天 JWT，存 localStorage（仅为简化实现，生产应改用 HttpOnly Cookie）；refresh token 留到后续安全增强。
 - 启动命令、端口、演示账号或 `.env` 配置变更时，请同步更新本 README；以代码和 `.env.example` 为准。

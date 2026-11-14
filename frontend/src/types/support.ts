@@ -28,6 +28,14 @@ export interface Citation {
   doc_type: string
   title: string | null
   chunk_id?: number
+  content?: string
+}
+
+export interface AgentMeta {
+  action: string
+  tools: string[]
+  trace: string[]
+  source?: string
 }
 
 export interface AnswerMeta {
@@ -37,6 +45,7 @@ export interface AnswerMeta {
   partial: boolean
   handoff_required: boolean
   degraded?: boolean
+  agent?: AgentMeta
 }
 
 export interface ChatMessageMeta {
@@ -47,6 +56,7 @@ export interface ChatMessageMeta {
   handoff_required?: boolean
   degraded?: boolean
   citations?: Citation[]
+  agent?: AgentMeta | null
   feedback?: { helpful: boolean; comment?: string | null }
   [key: string]: unknown
 }

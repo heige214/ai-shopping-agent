@@ -110,6 +110,7 @@ def test_answerable_rag_emits_ordered_sse_and_persists_meta(
     assert meta["handoff_required"] is False
     citations = next(payload for name, payload in events if name == "citations")
     assert citations["items"]
+    assert citations["items"][0]["content"]
     assert "纯棉" in answer_text(events)
 
     messages = client.get(
@@ -120,6 +121,51 @@ def test_answerable_rag_emits_ordered_sse_and_persists_meta(
     assert ai_message["meta"]["citations"]
     assert ai_message["meta"]["intent"] == "product_qa"
     assert ai_message["meta"]["retrieval"]["chunks"] > 0
+    assert ai_message["meta"]["agent"]["action"] == "rag"
+    assert "tool:search_knowledge" in ai_message["meta"]["agent"]["trace"]
+
+
+def test_size_availability_uses_product_facts_before_llm(
+    client, sample_knowledge
+):
+    # 意图模型故意失败；如果仍能回答，说明走了商品事实的尺码库存前置层
+    use_llm(FakeSupportLLM(fail_intent=True))
+    headers = register_and_login(client, "pipeline_size_facts")
+    session = create_session(client, headers, sample_knowledge["product_a_id"])
+
+    events = send(client, headers, session["id"], "有S的吗")
+    names = event_names(events)
+    text = answer_text(events)
+
+    assert "没有 S 码" in text
+    assert "M、L" in text
+    assert names[0] == "meta"
+    assert names.index("citations") < names.index("answer_meta")
+    assert names[-1] == "done"
+    meta = answer_meta(events)
+    assert meta["intent"] == "size_qa"
+    assert meta["can_answer"] is True
+    assert meta["handoff_required"] is False
+
+    citations = next(payload for name, payload in events if name == "citations")
+    assert citations["items"][0]["doc_type"] == "size"
+
+    messages = client.get(
+        f"/api/chat/sessions/{session['id']}/messages", headers=headers
+    ).json()["items"]
+    ai_message = messages[-1]
+    assert ai_message["meta"]["retrieval"]["source"] == "product_facts"
+
+
+def test_generic_stock_question_uses_fact_path(client, sample_knowledge):
+    use_llm(FakeSupportLLM(fail_intent=True))
+    headers = register_and_login(client, "pipeline_stock_facts")
+    session = create_session(client, headers, sample_knowledge["product_a_id"])
+
+    events = send(client, headers, session["id"], "有货吗")
+
+    assert "M、L" in answer_text(events)
+    assert answer_meta(events)["handoff_required"] is False
 
 
 @pytest.mark.parametrize(
@@ -154,7 +200,7 @@ def test_unknown_clarifies_once_then_falls_back(client, sample_knowledge):
     session = create_session(client, headers, sample_knowledge["product_a_id"])
 
     first = send(client, headers, session["id"], "这个问题你懂吗")
-    assert "不太确定" in answer_text(first)
+    assert "方便再具体说说" in answer_text(first)
     assert answer_meta(first)["handoff_required"] is False
 
     second = send(client, headers, session["id"], "那这个呢")
@@ -162,54 +208,62 @@ def test_unknown_clarifies_once_then_falls_back(client, sample_knowledge):
     assert answer_meta(second)["handoff_required"] is True
 
 
-def test_confidence_below_threshold_clarifies_once(client, sample_knowledge):
+def test_unseen_question_uses_agent_tools_instead_of_clarifying(
+    client, sample_knowledge
+):
     use_llm(
         FakeSupportLLM(
-            intent="product_qa",
-            answerability={
-                "can_answer": True,
-                "confidence": 0.4,
-                "partial": False,
+            plan={
+                "action": "rag",
+                "tools": ["product_facts", "search_knowledge"],
+                "search_query": "材质",
             },
+            answer_text="资料没有标注儿童适用年龄。",
+            fail_answerability=True,
         )
     )
-    headers = register_and_login(client, "pipeline_low_confidence")
+    headers = register_and_login(client, "pipeline_agent_unseen")
     session = create_session(client, headers, sample_knowledge["product_a_id"])
 
-    first = send(client, headers, session["id"], "这件衬衫是什么材质？")
-    assert "不太确定" in answer_text(first)
-    assert answer_meta(first)["handoff_required"] is False
-
-    second = send(client, headers, session["id"], "那洗护呢？")
-    assert "暂未检索到" in answer_text(second)
-    assert answer_meta(second)["handoff_required"] is True
-
-
-def test_partial_answer_suggests_handoff(client, sample_knowledge):
-    use_llm(
-        FakeSupportLLM(
-            intent="product_qa",
-            answerability={
-                "can_answer": True,
-                "confidence": 0.8,
-                "partial": True,
-            },
-            answer_text="资料确认材质是纯棉。",
-        )
-    )
-    headers = register_and_login(client, "pipeline_partial")
-    session = create_session(client, headers, sample_knowledge["product_a_id"])
-    events = send(client, headers, session["id"], "材质和产地是什么？")
+    events = send(client, headers, session["id"], "这个小孩子能带吗")
     text = answer_text(events)
-    assert "资料确认材质" in text
-    assert "其余部分建议转人工" in text
-    meta = answer_meta(events)
-    assert meta["partial"] is True
-    assert meta["handoff_required"] is True
+
+    assert "儿童适用年龄" in text
+    assert "方便再具体说说" not in text
     assert "citations" in event_names(events)
+    meta = answer_meta(events)
+    assert meta["can_answer"] is True
+    assert meta["handoff_required"] is False
+
+    messages = client.get(
+        f"/api/chat/sessions/{session['id']}/messages", headers=headers
+    ).json()["items"]
+    agent = messages[-1]["meta"]["agent"]
+    assert agent["action"] == "rag"
+    assert "search_knowledge" in agent["tools"]
+    assert "tool:search_knowledge" in agent["trace"]
 
 
-def test_low_similarity_short_circuits_without_answerability_llm(
+def test_model_no_answer_phrase_sets_handoff(client, sample_knowledge):
+    use_llm(
+        FakeSupportLLM(
+            intent="product_qa",
+            answer_text="知识库暂未检索到有效信息",
+        )
+    )
+    headers = register_and_login(client, "pipeline_no_answer")
+    session = create_session(client, headers, sample_knowledge["product_a_id"])
+    events = send(client, headers, session["id"], "这件衬衫是什么材质？")
+
+    text = answer_text(events)
+    assert "知识库暂未检索到有效信息" in text
+    assert "建议转人工客服进一步确认" in text
+    meta = answer_meta(events)
+    assert meta["can_answer"] is False
+    assert meta["handoff_required"] is True
+
+
+def test_low_similarity_falls_back_without_extra_model_call(
     client, sample_knowledge
 ):
     use_llm(
@@ -222,14 +276,11 @@ def test_low_similarity_short_circuits_without_answerability_llm(
     session = create_session(client, headers, sample_knowledge["product_a_id"])
     events = send(client, headers, session["id"], "这件衣服能防弹吗")
     assert "error" not in event_names(events)
-    assert "不太确定" in answer_text(events)
-
-    second = send(client, headers, session["id"], "能当雨衣吗")
-    assert "暂未检索到" in answer_text(second)
-    assert answer_meta(second)["handoff_required"] is True
+    assert "暂未检索到" in answer_text(events)
+    assert answer_meta(events)["handoff_required"] is True
 
 
-def test_intent_llm_failure_emits_error_and_fallback(client, sample_knowledge):
+def test_plan_llm_failure_emits_error_and_fallback(client, sample_knowledge):
     use_llm(FakeSupportLLM(fail_intent=True))
     headers = register_and_login(client, "pipeline_intent_fail")
     session = create_session(client, headers, sample_knowledge["product_a_id"])
@@ -272,9 +323,9 @@ def test_llm_timeout_emits_error_without_hanging(
     client, sample_knowledge, monkeypatch
 ):
     class SlowLLM(FakeSupportLLM):
-        async def route_intent(self, question: str, product_title: str):
+        async def plan_support(self, question: str, product_title: str):
             await asyncio.sleep(0.2)
-            return await super().route_intent(question, product_title)
+            return await super().plan_support(question, product_title)
 
     monkeypatch.setattr(pipeline.settings, "llm_timeout_seconds", 0.01)
     use_llm(SlowLLM())

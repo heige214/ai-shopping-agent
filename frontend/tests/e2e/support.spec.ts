@@ -15,7 +15,9 @@ test.beforeAll(async ({ request }) => {
   })
   expect(register.ok()).toBeTruthy()
 
-  const products = await request.get('/api/products?page_size=1')
+  const products = await request.get('/api/products', {
+    params: { q: '衬衫', page_size: 1 },
+  })
   expect(products.ok()).toBeTruthy()
   const body = await products.json()
   if (body.total === 0) {
@@ -40,7 +42,7 @@ async function ask(page: Page, question: string): Promise<void> {
   await expect(page.locator('.user-bubble').last()).toHaveText(question)
 }
 
-test('商品客服：材质问答引用 → 未知问题引导 → 兜底转人工', async ({ page }) => {
+test('商品客服：尺码库存直答 → 材质引用 → 未知问题引导 → 兜底转人工', async ({ page }) => {
   await login(page)
   await page.goto(`/product/${productId}`)
   await expect(page.locator('.detail-title')).not.toBeEmpty()
@@ -52,17 +54,38 @@ test('商品客服：材质问答引用 → 未知问题引导 → 兜底转人�
   await expect(page.locator('.mini-product')).toBeVisible()
   await expect(page.locator('.ai-bubble').first()).toContainText('AI 客服')
 
+  // 裸尺码问题：没有“尺码/码”字样，也要直接查商品尺码库存
+  await ask(page, '有XS的吗')
+  const sizeAnswer = page
+    .locator('.ai-bubble')
+    .filter({ hasText: '没有 XS 码' })
+  await expect(sizeAnswer).toBeVisible()
+  await expect(sizeAnswer).toContainText('S、M、L、XL、XXL')
+  await sizeAnswer.locator('.citation-chip').first().click()
+  await expect(page.locator('.citation-table')).toBeVisible()
+  await expect(page.locator('.citation-table tbody tr')).toHaveCount(5)
+  await page.locator('.citation-close').click()
+  await expect(page.locator('.citation-popup')).toBeHidden()
+
   // 材质问题：RAG 回答带引用
   await ask(page, '这件衣服是什么材质？')
-  const answer = page.locator('.ai-bubble').filter({ hasText: '根据商品资料' })
+  const answer = page.locator('.ai-bubble').filter({ hasText: '材质是' })
   await expect(answer).toBeVisible()
   await expect(answer).toContainText(/材质|纯棉|面料/)
-  await expect(answer.locator('.citation-chip').first()).toBeVisible()
+  const citation = answer.locator('.citation-chip').first()
+  await expect(citation).toBeVisible()
+
+  // 点击引用查看知识原文
+  await citation.click()
+  await expect(page.locator('.citation-popup')).toBeVisible()
+  await expect(page.locator('.citation-body')).not.toBeEmpty()
+  await page.locator('.citation-close').click()
+  await expect(page.locator('.citation-popup')).toBeHidden()
 
   // 反馈按钮
   const feedbackRow = page
     .locator('.ai-content')
-    .filter({ hasText: '根据商品资料' })
+    .filter({ hasText: '材质是' })
   await feedbackRow.getByRole('button', { name: '有帮助' }).click()
   await expect(page.locator('.van-toast__text')).toHaveText('感谢反馈')
   await page.locator('.van-toast').waitFor({ state: 'hidden' })
@@ -70,7 +93,7 @@ test('商品客服：材质问答引用 → 未知问题引导 → 兜底转人�
   // 知识库外问题：第一次澄清，第二次兜底
   await ask(page, '今天天气怎么样')
   await expect(
-    page.locator('.ai-bubble').filter({ hasText: '我还不太确定你的问题' }),
+    page.locator('.ai-bubble').filter({ hasText: '方便再具体说说' }),
   ).toBeVisible()
 
   await ask(page, '今天天气怎么样')

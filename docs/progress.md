@@ -31,6 +31,72 @@
 
 <!-- 每完成一个模块，把记录加在这里的最上面；第一条从 M0 开始。 -->
 
+## 2026-11-14 · M3 后续：LangGraph 客服 Agent + 开放式问题
+
+- 状态：已完成（M3 后续优化，分支 `fix/support-size-availability`）
+- 本次目标：解决“这个小孩子能带吗”被当成未知问题反问固定菜单的问题；把意图路由 + 检索 + 可回答性三段式改成 LangGraph 受控 Agent，让模型自己选择工具、读取商品事实和知识库后回答。
+- 完成内容：
+  - 新增 `langgraph>=1.2,<2` 依赖与 `app/modules/support/agent.py`：`StateGraph` 两个节点 `plan → tools`；`plan` 输出 `SupportPlan(action/tools/search_query/size/handoff_kind)`，`tools` 执行 `product_facts` / `search_knowledge` / `size_stock`。
+  - 移除独立的意图模型和可回答性模型调用：规划模型一次完成分流与工具选择，回答模型直接基于工具结果流式生成；开放问题不再因为“意图表没有这一项”被反问。总模型调用从 3 次降到 2 次（固定尺码/转人工/闲聊路径 0~1 次）。
+  - `unknown` 默认走 Agent 检索；只有规划器明确选择 `clarify` 时才澄清一次。商品事实前置层继续优先处理尺码/库存问题（0 次模型调用）。
+  - 规划提示词 `support_plan.py` 覆盖材质、洗护、尺码、适用人群/儿童/年龄、送礼等开放式问法；回答提示词补充“资料未标注儿童信息时明确说明并建议转人工”。
+  - 引用按问题主题收窄：材质只带 detail/faq，洗护带 care/detail/faq，政策带 policy/faq，适用人群带 detail/faq/size，避免材质回答附平台政策等无关引用。
+  - 本地/Fake 规划器同步支持 `plan_support`；无 key 时“这个小孩子能带吗”返回“商品资料标注适用人群为男，没有标注儿童年龄信息，建议转人工确认”，不再输出商品编码等无关内容。
+- 改动文件 / 目录：
+  - `backend/app/modules/support/agent.py`、`pipeline.py`
+  - `backend/app/ai/{base,local,fake,dashscope}.py`、`app/ai/prompts/{support_plan,support_answer,support_intent}.py`
+  - `backend/app/modules/knowledge/retrieval.py`
+  - `backend/requirements.txt`
+  - `backend/tests/test_support_agent.py`、`test_support_pipeline.py`、`test_local_answers.py`、`test_size_rules.py`
+  - `frontend/src/types/support.ts`、`frontend/tests/e2e/support.spec.ts`
+  - `README.md`
+- DB 迁移：无
+- 新增环境变量：无
+- 测试与验收：
+  - 后端：`155 passed`（137.1s）
+  - 前端：`npm run build` 成功
+  - E2E：`6 passed`（41.2s，M0-M2 不回归）
+  - 真实模型手工验收（qwen-plus）：
+    - `这个小孩子能带吗` → “不建议小孩子穿，这款衬衫适用人群明确标注为男，尺码最小 S 码……”，引用 detail/faq/size。
+    - `这件衬衫是什么材质？` → “这件衬衫是纯棉材质的，柔软透气，适合春夏季日常穿着。”，引用 faq/detail，不再附带洗护建议。
+    - `有XS的吗` → “不好意思，这款没有 XS 码，可选尺码是 S、M、L、XL、XXL 码。”，引用尺码指南。
+- 遗留问题：
+  - [后续] LangGraph 只做了 `plan → tools` 两节点，回答生成仍在管线中流式完成；如需可视化完整 Agent 轨迹，可增加 `verify` / `answer` 节点。
+  - [后续] 规划提示词依赖 qwen-plus 的 JSON 输出，异常时走 3 次结构化重试；后续可加规划结果缓存/降级策略。
+  - [备注] 当前 E2E 仍用 `AI_PROVIDER=fake`，真实模型仅在手工验收中调用。
+- 下一模块依赖：M4 可复用 `run_support_agent`、`SupportPlan`、工具注册方式与引用过滤；导购 Agent 可在此基础上扩展商品搜索、尺码推荐和加购工具。
+- commit：待提交（分支 `fix/support-size-availability`）
+
+## 2026-11-14 · M3 补充：尺码库存直答 + 引用表格
+
+- 状态：已完成（M3 后续优化，分支 `fix/support-size-availability`）
+- 本次目标：解决“有XS的吗”因缺少“尺码/码”字样而无法回答的问题；把尺码有无从“知识库检索问题”改为“商品库存查表问题”，并让引用弹层更直观。
+- 完成内容：
+  - 新增 `app/ai/size_rules.py`：识别 `XS/S/M/L/XL/XXL/XXXL`、数字尺码、均码；识别“有…吗/有没有/有货/库存/缺货”等问法；按商品库存、属性、尺码表生成“有的/没有/暂时缺货”的自然回答。
+  - 客服管线新增“商品事实前置层”：在意图路由和 RAG 之前，若问题确定是尺码/库存问题，直接用当前商品的 `stock_by_size`、`attributes.size`、`size_chart` 回答，不再因为知识库没有“XS”文档而误判；回答附带尺码指南引用。
+  - 检索补词：字母尺码统一映射到“尺码”，`有货 → 现货`，避免裸尺码问题召回失败；`retrieve_context` 支持复用已加载的商品事实。
+  - 引用增强：SSE `citations` 增加 `content`（前 400 字）；前端引用 chip 可点击，尺码引用用表格展示尺码/身高体重/胸围腰围或脚长，其他引用显示原文。
+  - 配置：`seed_knowledge.py` 新增 `--reembed`，切换真实 embedding 模型后可重建全部 1813 条知识向量；README 增加阿里云百炼 `DASHSCOPE_API_KEY`、`qwen-plus`、`text-embedding-v3` 配置与重建步骤。
+- 改动文件 / 目录：
+  - `backend/app/ai/size_rules.py`、`backend/app/ai/local.py`
+  - `backend/app/modules/knowledge/retrieval.py`、`backend/app/modules/support/pipeline.py`
+  - `backend/scripts/seed_knowledge.py`
+  - `backend/tests/test_size_rules.py`、`test_local_answers.py`、`test_knowledge_retrieval.py`、`test_support_pipeline.py`、`test_knowledge_schema.py`
+  - `frontend/src/types/support.ts`、`frontend/src/views/user/SupportView.vue`、`frontend/tests/e2e/support.spec.ts`
+  - `README.md`
+- DB 迁移：无
+- 新增环境变量：无（继续使用 `AI_PROVIDER`、`DASHSCOPE_API_KEY`、`CHAT_MODEL`、`EMBEDDING_MODEL`、`EMBEDDING_DIM`）
+- 测试与验收：
+  - 后端：`153 passed`（152.7s）
+  - 前端：`npm run build` 成功
+  - E2E：`6 passed`（42.2s）；客服用例新增“有XS的吗 → 直接回答没有 XS + 尺码表引用”
+  - 手工：`有XS的吗`、`有40码吗`、`有37码吗`、`有货吗`、`有优惠吗`、`订单里有XS吗` 均按预期分流；商品 140 回答“没有 XS，可选 35-39 码”并附尺码表。
+- 遗留问题：
+  - [已完成] 真实 `DASHSCOPE_API_KEY` 已配置；1813 条知识向量已用 `text-embedding-v3` 全量重建（写入 1813/1813），后端已切换为 `qwen-plus` 真实模型。
+  - [备注] 数字尺码在字母尺码商品上默认不当作尺码（如“有40的吗”），避免把价格/身高误判；明确说“40码/40尺码”时仍会按尺码处理。
+- 下一模块依赖：M4 可复用 `size_rules` 与“商品事实前置层”的组织方式；导购跨商品尺码推荐需要扩展为按商品范围批次查询。
+- commit：待提交（分支 `fix/support-size-availability`）
+
 ## 2026-11-14 · M3 知识库 + RAG 商品客服
 
 - 状态：已完成

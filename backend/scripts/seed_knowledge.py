@@ -49,6 +49,12 @@ async def _embed_texts(client, texts: list[str]) -> list[list[float] | None]:
     vectors: list[list[float] | None] = []
     for start in range(0, len(texts), EMBED_BATCH_SIZE):
         batch = texts[start : start + EMBED_BATCH_SIZE]
+        if start == 0 or (start // EMBED_BATCH_SIZE) % 10 == 0:
+            logger.info(
+                "embedding 进度 %d/%d",
+                min(start + len(batch), len(texts)),
+                len(texts),
+            )
         try:
             vectors.extend(await client.embed_texts(batch))
         except LLMError as exc:
@@ -241,15 +247,15 @@ async def seed(
     return stats
 
 
-async def backfill_embeddings(session: AsyncSession) -> dict[str, int]:
+async def backfill_embeddings(
+    session: AsyncSession,
+    refresh: bool = False,
+) -> dict[str, int]:
     client = get_embedding_client()
-    chunks = (
-        await session.scalars(
-            select(KnowledgeChunk)
-            .where(KnowledgeChunk.embedding.is_(None))
-            .order_by(KnowledgeChunk.id)
-        )
-    ).all()
+    stmt = select(KnowledgeChunk).order_by(KnowledgeChunk.id)
+    if not refresh:
+        stmt = stmt.where(KnowledgeChunk.embedding.is_(None))
+    chunks = (await session.scalars(stmt)).all()
     if not chunks:
         return {"chunks_found": 0, "embeddings_filled": 0}
     vectors = await _embed_texts(client, [chunk.content for chunk in chunks])
@@ -290,6 +296,11 @@ async def main() -> None:
         help="只补齐缺失 embedding，不导入/更新文档",
     )
     parser.add_argument(
+        "--reembed",
+        action="store_true",
+        help="重建全部 embedding（切换 embedding 模型后使用）",
+    )
+    parser.add_argument(
         "--file",
         type=Path,
         default=KNOWLEDGE_FILE,
@@ -299,7 +310,13 @@ async def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 
     async with AsyncSessionLocal() as session:
-        if args.embeddings_only:
+        if args.reembed:
+            stats = await backfill_embeddings(session, refresh=True)
+            print(
+                f"embedding 重建：检查 {stats['chunks_found']} 个 chunk，"
+                f"写入 {stats['embeddings_filled']} 个"
+            )
+        elif args.embeddings_only:
             stats = await backfill_embeddings(session)
             print(
                 f"embedding 补齐：找到 {stats['chunks_found']} 个 NULL，"

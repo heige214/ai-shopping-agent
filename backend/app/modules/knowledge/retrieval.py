@@ -9,6 +9,7 @@ from sqlalchemy import and_, func, literal_column, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.base import EmbeddingClient, LLMError
+from app.ai.size_rules import LETTER_SIZE_ORDER
 from app.modules.catalog.models import Category, Product, ProductSku
 from app.modules.knowledge.models import KnowledgeChunk, KnowledgeDocument
 
@@ -129,6 +130,15 @@ class RetrievalResult:
     facts: ProductFacts
 
 
+QUERY_SYNONYMS = {
+    # 用户常把“尺码”简说成“码/号”，检索时统一回尺码文档
+    "码": "尺码",
+    "号": "尺码",
+    # 知识片段用“现货/库存”描述库存，统一成“现货”便于召回
+    "有货": "现货",
+}
+
+
 def tokenize_query(query: str) -> list[str]:
     """jieba 分词后只保留中文/字母/数字，过滤停用词，最多 12 个。"""
     tokens: list[str] = []
@@ -138,6 +148,9 @@ def tokenize_query(query: str) -> list[str]:
             continue
         if not re.fullmatch(r"[0-9a-z一-鿿]+", token):
             continue
+        token = QUERY_SYNONYMS.get(token, token)
+        if token.upper() in LETTER_SIZE_ORDER:
+            token = "尺码"
         if token not in tokens:
             tokens.append(token)
         if len(tokens) >= 12:
@@ -351,6 +364,52 @@ def format_product_facts(facts: ProductFacts) -> str:
     return "\n".join(lines)
 
 
+def citations_from_chunks(
+    chunks: list[RetrievedChunk],
+    limit: int = 4,
+) -> list[dict[str, Any]]:
+    """把检索切片转成前端引用，按文档类型+标题去重。"""
+    items: list[dict[str, Any]] = []
+    seen: set[tuple[str, str | None]] = set()
+    for chunk in chunks:
+        key = (chunk.doc_type, chunk.title)
+        if key in seen:
+            continue
+        seen.add(key)
+        items.append(
+            {
+                "doc_type": chunk.doc_type,
+                "title": chunk.title,
+                "chunk_id": chunk.chunk_id,
+                "content": chunk.content[:400],
+            }
+        )
+        if len(items) >= limit:
+            break
+    return items
+
+
+async def load_product_doc_chunk(
+    db: AsyncSession,
+    product_id: int,
+    doc_type: str,
+) -> RetrievedChunk | None:
+    """读取当前商品某类知识的第一条切片，用于结构化事实回答附引用。"""
+    stmt = (
+        select(KnowledgeChunk, KnowledgeDocument)
+        .join(KnowledgeDocument, KnowledgeDocument.id == KnowledgeChunk.document_id)
+        .where(
+            KnowledgeChunk.product_id == product_id,
+            KnowledgeDocument.doc_type == doc_type,
+            KnowledgeDocument.status == "active",
+        )
+        .order_by(KnowledgeChunk.id)
+        .limit(1)
+    )
+    row = (await db.execute(stmt)).first()
+    return _to_hit(row[0], row[1]) if row else None
+
+
 def format_chunks_for_llm(chunks: list[RetrievedChunk]) -> str:
     lines: list[str] = []
     for index, chunk in enumerate(chunks, start=1):
@@ -366,6 +425,7 @@ async def retrieve_context(
     product_id: int,
     query: str,
     embedding_client: EmbeddingClient,
+    facts: ProductFacts | None = None,
 ) -> RetrievalResult:
     product = await db.get(Product, product_id)
     if product is None:
@@ -389,7 +449,8 @@ async def retrieve_context(
     ]
     keyword_hits = await _keyword_hits(db, product_id, ancestor_ids, query)
     chunks = rrf_merge(vector_hits, keyword_hits)
-    facts = await load_product_facts(db, product)
+    if facts is None:
+        facts = await load_product_facts(db, product)
     return RetrievalResult(
         chunks=chunks,
         max_similarity=max_similarity,

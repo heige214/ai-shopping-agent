@@ -14,6 +14,8 @@
 - 主项目骨架与商品域已完成：M0 认证/双 Tab/迁移/测试基线；M1 品类/商品/SKU/收藏/分类列表/商品详情/可复用商品发现组件。
 - 交易域已完成（M2）：购物车、地址、订单、模拟支付/取消/确认收货、客服端已支付订单发货；库存扣减/恢复、支付幂等、超时取消、用户数据隔离与 `role ∈ {agent, admin}` 守卫均已落地。
 - 知识库与商品客服已完成（M3）：913 篇知识文档 / 1813 切片（商品详情、尺码、商品 FAQ、一级品类洗护、平台政策）；商品 + 一级品类 + 平台三级范围混合检索（向量 top20 + 关键词 top20 → RRF top8）；`/api/chat/sessions` 与 SSE 消息接口；商品客服页支持流式回答、引用、反馈、每会话一次澄清、固定兜底与最小转人工 waiting 工单。无 DashScope key 时使用本地规则 + 关键词检索，知识种子 embedding 可为 NULL。
+- M3 补充（2026-11-14，分支 `fix/support-size-availability`）：新增尺码库存“商品事实前置层”，`有XS的吗` 这类不带“尺码/码”的问题会先查商品库存与尺码表，再决定是否检索知识库；引用 chip 可点击，尺码引用用表格展示；`seed_knowledge.py` 支持 `--reembed` 在切换真实 embedding 模型后重建向量。真实百炼 Key 已配置，1813 条知识向量已用 `text-embedding-v3` 全量重建，后端当前使用 `qwen-plus`。
+- M3 Agent（2026-11-14，同分支）：客服主链路改为 LangGraph 受控工作流 `plan → tools`，由规划模型选择 `product_facts` / `search_knowledge` / `size_stock` 工具，再流式回答；移除独立意图和可回答性模型调用，开放问题（如“这个小孩子能带吗”）不再被固定意图菜单反问。引用按问题主题收窄。M4 可直接复用 `run_support_agent` 与 `SupportPlan`。
 - 本地开发端口：后端 8100（本机 Windows 保留 7997–8096，8000 不可用），前端 Vite 5175（避开本机其他项目常占用的 5173/5174），`/api` 代理指向 8100。
 - 本地运行：以 `README.md` 的「本地启动」为准（Docker DB 5433、后端 8100、前端 5175、demo/demo123；客服 agent/agent123；商品与知识种子分别用 `seed_catalog` / `seed_knowledge` 导入）。
 
@@ -89,6 +91,7 @@ M4 注意：
 
 - M3 的 `POST /api/chat/sessions` 只接受 `type=support`，`guide` 返回 400；M4 需在保持 support 行为不变的前提下放开 guide 并补导购槽位/澄清策略。
 - M3 的检索范围是单商品 + 一级品类 + 平台；M4 导购需要跨商品召回，建议新增商品级向量或复用关键词召回，不要直接放宽商品客服的 scope 条件。
+- M3 已引入 `langgraph` 与 `app/modules/support/agent.py` 的 `run_support_agent`；M4 可扩展工具集（商品搜索、尺码推荐、加购），不要把导购工具塞进 M3 的 `CITATION_TYPES_BY_TOPIC` 逻辑里，建议按模块拆分工具注册。
 - `products.embedding` 仍为 NULL，M4 如需商品向量应单独生成并做幂等/去重，不要改写 M3 的知识切片表。
 - M3 未接真实 DashScope key；M4 开发时先用 `AI_PROVIDER=fake` / `local` 保证测试无网络，再手工验证真实模型。
 
