@@ -60,7 +60,7 @@ def fetch_int(query: str, *params) -> int:
     return asyncio.run(_run())
 
 
-def test_create_session_reuses_active_support_and_rejects_guide(
+def test_create_session_reuses_active_support_and_allows_guide(
     client, sample_knowledge
 ):
     headers = register_and_login(client)
@@ -89,7 +89,24 @@ def test_create_session_reuses_active_support_and_rejects_guide(
         json={"type": "guide"},
         headers=headers,
     )
-    assert guide.status_code == 400
+    assert guide.status_code == 201
+    guide_session = guide.json()
+    assert guide_session["type"] == "guide"
+    assert guide_session["product"] is None
+    assert (
+        client.get(
+            f"/api/chat/sessions/{guide_session['id']}/messages",
+            headers=headers,
+        ).json()["items"]
+        == []
+    )
+    guide_again = client.post(
+        "/api/chat/sessions",
+        json={"type": "guide"},
+        headers=headers,
+    )
+    assert guide_again.status_code == 200
+    assert guide_again.json()["id"] == guide_session["id"]
 
     missing_product = client.post(
         "/api/chat/sessions",
@@ -179,7 +196,7 @@ def test_message_pagination_title_and_content_validation(client, sample_knowledg
     assert empty.status_code == 400
     assert (
         client.get("/api/chat/sessions?type=guide", headers=headers).status_code
-        == 400
+        == 200
     )
 
 
