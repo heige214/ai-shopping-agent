@@ -133,8 +133,15 @@ async function toggleFavorite(): Promise<void> {
   }
 }
 
-function placeholder(message: string): void {
-  showToast(message)
+function openSupport(): void {
+  if (!product.value) {
+    return
+  }
+  void router.push({
+    name: 'product-support',
+    params: { id: product.value.id },
+    query: selectedSize.value ? { size: selectedSize.value } : {},
+  })
 }
 
 async function addToCart(): Promise<CartItem | null> {
@@ -335,7 +342,7 @@ onMounted(() => {
         <button
           type="button"
           class="bottom-icon"
-          @click="placeholder('客服将在 M6 上线')"
+          @click="openSupport"
         >
           <van-icon name="service-o" size="19" />
           <span>客服</span>

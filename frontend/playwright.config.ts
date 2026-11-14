@@ -20,10 +20,18 @@ export default defineConfig({
       },
     },
   ],
-  webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:5175',
-    reuseExistingServer: false,
-    timeout: 60_000,
-  },
+  webServer: [
+    {
+      command: 'node tests/e2e/start-backend.mjs',
+      url: 'http://127.0.0.1:8100/api/health',
+      reuseExistingServer: false,
+      timeout: 120_000,
+    },
+    {
+      command: 'npm run dev',
+      url: 'http://localhost:5175',
+      reuseExistingServer: false,
+      timeout: 60_000,
+    },
+  ],
 })

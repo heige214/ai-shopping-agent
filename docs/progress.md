@@ -4,7 +4,7 @@
 > 规则：只记事实，不重复设计文档；接口、DB 契约变更先改设计文档，再改这里。
 > 最新记录放最上面。
 
-最后更新：2026-11-13
+最后更新：2026-11-14
 
 ## 当前状态
 
@@ -13,7 +13,7 @@
 | M0 | 项目骨架：配置、DB、认证、前端壳、测试基线 | 已完成 | m0 |
 | M1 | 商品域 + 种子数据 + 商品详情 | 已完成 | m1-product-catalog |
 | M2 | 购物车、地址、订单、模拟支付/发货 | 已完成 | m2 |
-| M3 | 知识库 + RAG 商品客服 | 未开始 | — |
+| M3 | 知识库 + RAG 商品客服 | 已完成 | m3 |
 | M4 | 导购聊天、意图槽位、澄清、尺码 | 未开始 | — |
 | M5 | 图片理解、语音、AI 加购 | 未开始 | — |
 | M6 | 转人工、客服端队列/工作台 | 未开始 | — |
@@ -30,6 +30,46 @@
 ## 模块记录
 
 <!-- 每完成一个模块，把记录加在这里的最上面；第一条从 M0 开始。 -->
+
+## 2026-11-14 · M3 知识库 + RAG 商品客服
+
+- 状态：已完成
+- 本次目标：在 M0-M2 之上落地知识库、商品范围混合检索、商品客服 SSE 问答、引用/反馈与最小转人工闭环。
+- 完成内容：
+  - 后端：新增 `knowledge_documents` / `knowledge_chunks` / `chat_sessions` / `chat_messages` / `support_tickets` 五表与 `20261113_0004_create_knowledge_support` 迁移；`knowledge_chunks.embedding vector(1024)` 建 HNSW `vector_cosine_ops` 索引，`search_text` 建 GIN 表达式索引；`chat_actions`（M5）、`knowledge_candidates` / `product_field_history`（M7）未建。
+  - 知识种子：`build_knowledge_seed.py` 从商品/品类 JSON 确定性生成 300 商品详情（每份 2 chunk）+ 300 尺码（1 chunk）+ 900 商品 FAQ（每商品 3 条）+ 4 份一级品类洗护 + 9 份平台政策，共 913 文档 / 1813 chunk；24 条品类 FAQ 草稿标 pending 写入 `category_faq_drafts.json`，不进入检索；`review.csv` 供人工审核。`seed_knowledge.py` 按 `seed_key` / 文档键幂等导入，同商品/同品类/平台分别做余弦 >0.92 去重，`--embeddings-only` 只补缺失向量；无 key 时 embedding 保持 NULL 且不中断。
+  - 检索：范围固定为当前商品 + 一级品类祖先 + 平台；向量 top20（相似度 <0.35 先过滤）+ jieba 分词 `to_tsquery('simple', ...)`/`ts_rank` 关键词 top20，经 RRF（k=60）融合取 top8；同时读取商品标题、品牌、价格、属性、尺码表、库存作为事实注入。
+  - 客服管线：意图路由 → 固定话术或检索 → 可回答性 → 流式回答；`product_qa` / `size_qa` / `policy_qa` 走 RAG；`order_qa` / `complaint` 固定话术 + 转人工；`chitchat` 简短引导；`unknown` 每会话最多澄清一次，第二次兜底 + 转人工。无 chunk 且 `max_similarity < 0.35` 直接不可答；`can_answer=false` 或 `confidence < 0.6` 走澄清/兜底；`partial=true` 回答已知部分并追加转人工建议。LLM 超时 20s、失败发 `error` + 固定降级话术，不挂起。
+  - API：`POST/GET /api/chat/sessions`、分页消息、`POST .../messages`（SSE）、`POST .../escalate`（幂等 waiting 工单 + `waiting_human`）、`POST /api/chat/messages/{id}/feedback`；M3 仅 `type=support`，guide 返回 400；全部按 `user_id` 隔离，同用户同商品复用最近 active 会话。
+  - AI 抽象：`SupportLLM` / `EmbeddingClient` 协议；`DashScopeSupportLLM` / `DashScopeEmbeddingClient`、`LocalSupportLLM` / `NoopEmbeddingClient`、`FakeSupportLLM` / `FakeEmbeddingClient`；prompts 集中在 `app/ai/prompts/`；JSON 结构化输出经 Pydantic 校验，失败重试 2 次。
+  - 前端：新增 `/product/:id/support` 客服页（商品摘要、消息流、SSE 流式气泡、引用 chips、有帮助/没帮助、兜底卡片 + 转人工、等待人工 banner、输入禁用）；商品详情底部「客服」改为跳转并携带已选尺码；`utils/sse.ts` 用 fetch + ReadableStream 解析 POST SSE，不使用 EventSource。
+  - E2E：新增 `start-backend.mjs` 定位 `backend/.venv` Python 并以 `AI_PROVIDER=fake` 启动 8100；Playwright `webServer` 同时拉起 fake 后端与 Vite；新增客服用例覆盖材质回答 + 引用 + 反馈、知识库外问题澄清一次、兜底、转人工等待态。
+- 改动文件 / 目录：
+  - `backend/app/ai/`、`backend/app/modules/knowledge/`、`backend/app/modules/support/`
+  - `backend/alembic/versions/20261113_0004_create_knowledge_support.py`
+  - `backend/scripts/build_knowledge_seed.py`、`seed_knowledge.py`、`backend/seeds/knowledge/`
+  - `backend/app/core/config.py`、`backend/app/main.py`、`backend/app/models.py`、`backend/.env.example`、`backend/requirements.txt`
+  - `backend/tests/conftest.py`、`test_knowledge_schema.py`、`test_knowledge_retrieval.py`、`test_support_api.py`、`test_support_pipeline.py`
+  - `frontend/src/types/support.ts`、`api/support.ts`、`utils/sse.ts`、`views/user/SupportView.vue`
+  - `frontend/src/router/index.ts`、`views/user/ProductDetailView.vue`、`tests/e2e/support.spec.ts`、`tests/e2e/start-backend.mjs`、`playwright.config.ts`
+  - `README.md`、`docs/superpowers/plans/2026-11-13-m3-knowledge-rag.md`
+- DB 迁移：`20261113_0004_create_knowledge_support`
+- 新增环境变量（均可选）：`AI_PROVIDER`、`DASHSCOPE_API_KEY`、`DASHSCOPE_BASE_URL`、`CHAT_MODEL`、`EMBEDDING_MODEL`、`EMBEDDING_DIM=1024`、`LLM_TIMEOUT_SECONDS=20`
+- 测试与验收：
+  - 命令：`cd backend && ./.venv/Scripts/python.exe -m pytest -q`；`cd frontend && npm run build`；`cd frontend && npm run test:e2e`
+  - 结果：后端 `131 passed`（139.98s，M2 基线 104 + 新增 27）；前端构建成功（433 modules，vue-tsc 无报错）；E2E `6 passed`（42.4s，M0-M2 原 5 条不回归 + 新增客服 1 条）。
+  - 手工验收（开发库 `shop`，`AI_PROVIDER=fake`，未配置真实 key）：3 个商品（纯棉衬衫 / 网面运动鞋 / 帆布双肩包）分别询问材质、尺码、洗护，均返回 `can_answer=true`，引用覆盖 detail/faq/size/care；平台退货政策返回 policy 引用；知识库外问题第一次澄清、第二次兜底并 `handoff_required=true`；未发现知识库外编造内容。
+- 遗留问题：
+  - [后续] 未配置真实 `DASHSCOPE_API_KEY`，DashScope 意图/可答性/流式回答与 embedding 仅通过单元 fake 验证，尚未做真实模型质量与延迟验收。
+  - [后续] 本地模式回答为检索片段拼接（抽取式），可演示但自然度有限；真实 key 下的生成质量待 M8 评测。
+  - [后续] 品类 FAQ 24 条仍为 pending 草稿，需 M7 知识审核闭环处理。
+  - [后续] M3 仅文本消息；图片/语音、AI 加购留 M5。
+  - [后续] 转人工只创建 waiting 工单并展示等待条，队列/客服接入/工作台/WebSocket/会话总结留 M6。
+  - [后续] SSE 无断线重连/事件 ID 续传；前端刷新后依靠消息分页恢复。
+  - [后续] `products.embedding` 仍为 NULL，商品本身向量召回留 M4。
+  - [备注] E2E 通过 fake 后端验证链路，不访问真实 DashScope；知识种子已在开发库导入 913 文档 / 1813 chunk / 1813 向量（fake embedding）。
+- 下一模块依赖：M4 可直接复用 `app/ai/` 的 LLM/Embedding 抽象、`knowledge_chunks` 检索与商品/品类种子；导购会话复用 `chat_sessions.type=guide` 时需放开 M3 的 400 限制并新增槽位/澄清策略；商品向量生成可复用 `FakeEmbeddingClient` / DashScope embedding 客户端。
+- commit：M3 分支 `m3-knowledge-rag`，tag `m3`（见 `git log`）
 
 ## 2026-11-13 · M2 交易域（购物车 / 地址 / 订单 / 模拟支付发货收货）
 

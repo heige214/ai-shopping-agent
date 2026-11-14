@@ -11,6 +11,7 @@
 - M0 项目骨架：登录 / 注册、双 Tab 空壳、PostgreSQL + Alembic、pytest、Playwright。
 - M1 商品域：4 个一级 + 34 个叶子品类、300 个商品、1108 条 SKU、收藏、分类列表、商品详情与可复用商品发现组件。
 - M2 交易域：购物车、收货地址、订单、模拟支付、客服发货、确认收货；商品详情加购/立即购买已接通，客服端提供已支付订单发货页。
+- M3 知识库 + RAG 商品客服：913 篇知识文档 / 1813 个切片，商品 + 一级品类 + 平台三级范围混合检索；商品客服页支持 SSE 流式回答、引用、反馈、澄清一次与最小转人工（等待工单）。无 DashScope key 时自动降级为本地规则 + 关键词检索。
 
 ## 环境要求
 
@@ -64,8 +65,11 @@ PY
 python -m alembic upgrade head
 python -m scripts.seed_demo_user   # 同时创建 demo/demo123 与 agent/agent123
 python -m scripts.seed_catalog
+python -m scripts.seed_knowledge   # 商品/品类/平台知识；无 key 时只入库不生成向量
 uvicorn app.main:app --reload --port 8100
 ```
+
+AI 配置为可选项：不配置 `DASHSCOPE_API_KEY` 时，客服使用 `LocalSupportLLM`（规则意图 + 片段拼接回答）和关键词检索，仍可完整演示；配置 key 后自动使用 `qwen-plus` + `text-embedding-v3`。如需强制本地/测试模式，可设置 `AI_PROVIDER=local` 或 `AI_PROVIDER=fake`。变量说明见 `backend/.env.example`。
 
 健康检查：<http://localhost:8100/api/health>
 
@@ -115,7 +119,16 @@ python -m scripts.build_catalog_seed --force
 
 `build` 默认拒绝覆盖已有 JSON；`seed` 按 `product_code` / `sku_code` upsert，重复执行不会重复插入，也不会丢收藏。
 
-前端 E2E（先确保数据库已迁移、演示/客服账号与商品种子已创建、后端已在 8100 端口运行）：
+知识种子（`backend/seeds/knowledge/knowledge.json`）同样已提交，按 `seed_key` 幂等导入；无 key 时 embedding 为 NULL，可用 `--embeddings-only` 在配置 key 后补齐：
+
+```bash
+cd backend
+source .venv/Scripts/activate
+python -m scripts.seed_knowledge
+python -m scripts.seed_knowledge --embeddings-only   # 仅补缺失向量
+```
+
+前端 E2E（先确保数据库已迁移，演示/客服账号、商品与知识种子已创建）：
 
 ```bash
 cd frontend
@@ -123,7 +136,7 @@ npx playwright install chromium   # 首次
 npm run test:e2e
 ```
 
-E2E 会自行启动 Vite，请先停止前端 dev server 并确保 5175 端口空闲；测试完成后 Vite 自动关闭。后端需保持运行。
+E2E 会自行启动 Vite 与后端（`tests/e2e/start-backend.mjs` 使用 `AI_PROVIDER=fake`，不访问真实 DashScope）；请先停止前端 dev server 与 8100 上的后端，确保 5175 / 8100 端口空闲。测试完成后两个服务自动关闭。
 
 ## 停止与重置
 
@@ -147,6 +160,7 @@ source .venv/Scripts/activate   # macOS/Linux 用 .venv/bin/activate
 python -m alembic upgrade head
 python -m scripts.seed_demo_user   # demo/demo123 + agent/agent123
 python -m scripts.seed_catalog
+python -m scripts.seed_knowledge
 ```
 
 ## 主要目录
@@ -154,16 +168,20 @@ python -m scripts.seed_catalog
 ```text
 backend/
 ├── app/
+│   ├── ai/               # SupportLLM / EmbeddingClient 抽象、DashScope、本地规则、Fake、prompts
 │   ├── core/             # 配置、安全
 │   ├── db/               # engine、Base、session
 │   ├── modules/auth/     # 用户、注册、登录
 │   ├── modules/catalog/  # 品类、商品、SKU、收藏
 │   ├── modules/commerce/ # 购物车、地址、订单、模拟支付/发货
+│   ├── modules/knowledge/# 知识文档/切片、混合检索、种子导入
+│   ├── modules/support/  # 客服会话/消息/SSE 管线/反馈/转人工工单
 │   ├── main.py
 │   └── models.py
 ├── alembic/              # 数据库迁移
 ├── seeds/catalog/        # 品类与商品种子 JSON（商品 JSON 由 CSV 生成）
-├── scripts/              # 种子脚本（演示账号 + 客服账号 + 商品）
+├── seeds/knowledge/      # 知识种子 JSON、待审草稿、审核 CSV
+├── scripts/              # 种子脚本（演示账号 + 客服账号 + 商品 + 知识）
 ├── static/products/      # 300 张商品图（gitignored）
 └── tests/                # pytest
 
@@ -178,9 +196,9 @@ frontend/
 │   ├── styles/           # 设计变量与全局样式
 │   ├── types/            # TypeScript 类型
 │   ├── utils/            # token、错误提示、格式化、颜色、订单状态
-│   ├── views/user/       # 登录、注册、找货、分类、详情、收藏、购物车、结算、订单、地址、我的
+│   ├── views/user/       # 登录、注册、找货、分类、详情、客服、收藏、购物车、结算、订单、地址、我的
 │   └── views/agent/      # 客服端订单发货
-├── tests/e2e/            # Playwright 端到端测试
+├── tests/e2e/            # Playwright 端到端测试（含 fake 后端启动脚本）
 ├── playwright.config.ts
 └── vite.config.ts
 
@@ -191,5 +209,8 @@ deploy/                   # 开发数据库 Docker Compose
 
 - `backend/static/products/` 约 342MB，已在 `.gitignore` 中排除，需单独备份；M1 商品图通过后端 `/static` 挂载、Vite `/static` 代理访问。
 - 演示账号 `demo / demo123` 与客服账号 `agent / agent123` 仅用于本地演示，生产环境必须更换密码；客服端接口 `/api/agent/*` 要求 `role ∈ {agent, admin}`。
+- M3 知识库：`build_knowledge_seed.py` 由商品/品类 JSON 确定性生成 300 商品详情 + 300 尺码 + 900 商品 FAQ + 4 一级品类洗护 + 9 平台政策，共 913 文档 / 1813 切片；24 条品类 FAQ 草稿标 pending，留在 `category_faq_drafts.json`，不进入检索。审核清单见 `review.csv`。
+- M3 检索：向量 top20 + jieba/tsvector 关键词 top20 → RRF 融合取 top8；范围固定为当前商品、其一级品类、平台，不跨商品/跨一级品类。无 embedding 时自动退化为关键词检索。
+- M3 客服：`/product/:id/support` 使用 fetch + ReadableStream 解析 POST SSE；会话按 `user_id` 隔离，同商品复用最近 active 会话。M3 仅文本与最小转人工，队列/客服工作台/WebSocket/会话总结留 M6。
 - 当前登录态为 7 天 JWT，存 localStorage（仅为简化实现，生产应改用 HttpOnly Cookie）；refresh token 留到后续安全增强。
 - 启动命令、端口、演示账号或 `.env` 配置变更时，请同步更新本 README；以代码和 `.env.example` 为准。

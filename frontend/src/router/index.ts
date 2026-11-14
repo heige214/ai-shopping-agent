@@ -33,6 +33,12 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/product/:id/support',
+      name: 'product-support',
+      component: () => import('@/views/user/SupportView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/favorites',
       name: 'favorites',
       component: () => import('@/views/user/FavoritesView.vue'),

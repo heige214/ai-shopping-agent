@@ -23,6 +23,9 @@ os.environ.setdefault(
 )
 os.environ.setdefault("JWT_EXPIRE_MINUTES", "10080")
 os.environ.setdefault("CORS_ORIGINS", "http://localhost:5175")
+# 测试永不请求真实 DashScope；fake 提供确定性 LLM 与 embedding
+os.environ.setdefault("AI_PROVIDER", "fake")
+os.environ["DASHSCOPE_API_KEY"] = ""
 
 import pytest
 from fastapi.testclient import TestClient
@@ -216,3 +219,192 @@ def agent_token(client, execute_sql):
     response = client.post("/api/auth/login", json=payload)
     assert response.status_code == 200
     return response.json()["access_token"]
+
+
+@pytest.fixture
+def clean_support(migrated_database):
+    """清空知识域与客服域五表，不影响 users/catalog。"""
+
+    async def _clean() -> None:
+        engine = create_async_engine(TEST_DATABASE_URL, poolclass=NullPool)
+        async with engine.begin() as connection:
+            await connection.execute(
+                text(
+                    "TRUNCATE TABLE support_tickets, chat_messages, chat_sessions, "
+                    "knowledge_chunks, knowledge_documents RESTART IDENTITY CASCADE"
+                )
+            )
+        await engine.dispose()
+
+    asyncio.run(_clean())
+    yield
+
+
+@pytest.fixture
+def sample_knowledge(clean_support, sample_catalog):
+    """为 sample_catalog 造最小知识集（商品/一级品类/平台/干扰项）。"""
+    from app.ai.embeddings import FakeEmbeddingClient
+    from app.modules.catalog.models import Category
+    from app.modules.knowledge.models import KnowledgeChunk, KnowledgeDocument
+    from scripts.seed_knowledge import build_search_text
+
+    async def _create() -> dict:
+        engine = create_async_engine(TEST_DATABASE_URL, poolclass=NullPool)
+        embedder = FakeEmbeddingClient()
+        try:
+            async with AsyncSession(engine, expire_on_commit=False) as session:
+                other_category = Category(
+                    name="测试鞋靴",
+                    slug="test-footwear",
+                    level=1,
+                    sort_order=1,
+                )
+                session.add(other_category)
+                await session.flush()
+
+                detail_doc = KnowledgeDocument(
+                    scope="product",
+                    product_id=sample_catalog["product_a_id"],
+                    category_id=sample_catalog["category_id"],
+                    doc_type="detail",
+                    title="测试衬衫 · 商品详情",
+                    source="seed",
+                    status="active",
+                )
+                size_doc = KnowledgeDocument(
+                    scope="product",
+                    product_id=sample_catalog["product_a_id"],
+                    category_id=sample_catalog["category_id"],
+                    doc_type="size",
+                    title="测试衬衫 · 尺码指南",
+                    source="seed",
+                    status="active",
+                )
+                faq_doc = KnowledgeDocument(
+                    scope="product",
+                    product_id=sample_catalog["product_a_id"],
+                    category_id=sample_catalog["category_id"],
+                    doc_type="faq",
+                    title="测试衬衫 · 常见问题",
+                    source="seed",
+                    status="active",
+                )
+                category_doc = KnowledgeDocument(
+                    scope="category",
+                    product_id=None,
+                    category_id=sample_catalog["category_id"],
+                    doc_type="care",
+                    title="测试服装 · 洗护指南",
+                    source="seed",
+                    status="active",
+                )
+                platform_doc = KnowledgeDocument(
+                    scope="platform",
+                    product_id=None,
+                    category_id=None,
+                    doc_type="policy",
+                    title="平台规则 · 发货时效",
+                    source="manual",
+                    status="active",
+                )
+                other_product_doc = KnowledgeDocument(
+                    scope="product",
+                    product_id=sample_catalog["product_b_id"],
+                    category_id=sample_catalog["category_id"],
+                    doc_type="detail",
+                    title="测试帽子 · 商品详情",
+                    source="seed",
+                    status="active",
+                )
+                other_category_doc = KnowledgeDocument(
+                    scope="category",
+                    product_id=None,
+                    category_id=other_category.id,
+                    doc_type="care",
+                    title="测试鞋靴 · 洗护指南",
+                    source="seed",
+                    status="active",
+                )
+                session.add_all(
+                    [
+                        detail_doc,
+                        size_doc,
+                        faq_doc,
+                        category_doc,
+                        platform_doc,
+                        other_product_doc,
+                        other_category_doc,
+                    ]
+                )
+                await session.flush()
+
+                specs = [
+                    (
+                        detail_doc,
+                        "测试衬衫的材质是纯棉，版型常规，适合春夏穿着。",
+                        {"section": "概述", "doc_type": "detail"},
+                    ),
+                    (
+                        size_doc,
+                        "测试衬衫尺码表：M 码适合身高 165-172cm，体重 55-65kg。",
+                        {"section": "尺码表", "doc_type": "size"},
+                    ),
+                    (
+                        faq_doc,
+                        "测试衬衫怎么洗？棉质建议 30℃ 以下冷水洗涤，反面晾晒。",
+                        {
+                            "question": "测试衬衫怎么洗？",
+                            "section": "care",
+                            "doc_type": "faq",
+                        },
+                    ),
+                    (
+                        category_doc,
+                        "棉质服装建议 30℃ 以下冷水洗涤，反面晾晒，避免高温烘干。",
+                        {"section": "通用洗护", "doc_type": "care"},
+                    ),
+                    (
+                        platform_doc,
+                        "平台商品付款后 48 小时内发货，支持 7 天无理由退换。",
+                        {"section": "发货时效", "doc_type": "policy"},
+                    ),
+                    (
+                        other_product_doc,
+                        "测试帽子的材质是涤纶，适合夏季佩戴。",
+                        {"section": "概述", "doc_type": "detail"},
+                    ),
+                    (
+                        other_category_doc,
+                        "鞋靴建议软刷清洁，阴干，避免暴晒。",
+                        {"section": "通用洗护", "doc_type": "care"},
+                    ),
+                ]
+                chunks = []
+                for index, (document, content, meta) in enumerate(specs, start=1):
+                    vectors = await embedder.embed_texts([content])
+                    chunks.append(
+                        KnowledgeChunk(
+                            document_id=document.id,
+                            product_id=document.product_id,
+                            category_id=document.category_id,
+                            content=content,
+                            search_text=build_search_text(
+                                content, meta.get("question")
+                            ),
+                            embedding=vectors[0],
+                            meta={**meta, "seed_key": f"sample:{index}"},
+                        )
+                    )
+                session.add_all(chunks)
+                await session.commit()
+                return {
+                    **sample_catalog,
+                    "other_category_id": other_category.id,
+                    "detail_content": specs[0][1],
+                    "size_content": specs[1][1],
+                    "platform_content": specs[4][1],
+                }
+        finally:
+            await engine.dispose()
+
+    return asyncio.run(_create())

@@ -15,6 +15,15 @@ class Settings(BaseSettings):
     jwt_expire_minutes: int = 60 * 24 * 7
     cors_origins: str = "http://localhost:5175"
 
+    # AI：key 可选；缺失时客服退化为本地规则 + 关键词检索
+    ai_provider: str = "auto"  # auto / dashscope / local / fake
+    dashscope_api_key: str | None = None
+    dashscope_base_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    chat_model: str = "qwen-plus"
+    embedding_model: str = "text-embedding-v3"
+    embedding_dim: int = 1024
+    llm_timeout_seconds: float = 20.0
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
@@ -29,6 +38,23 @@ class Settings(BaseSettings):
         if len(secret) < 32:
             raise ValueError("JWT_SECRET_KEY 必须至少 32 个字符")
         return secret
+
+    @field_validator("dashscope_api_key", mode="before")
+    @classmethod
+    def normalize_dashscope_key(cls, value: object) -> str | None:
+        """.env 中留空视为未配置，避免空字符串被当成有效 key。"""
+        if value is None:
+            return None
+        text = str(value).strip()
+        return text or None
+
+    @field_validator("ai_provider")
+    @classmethod
+    def normalize_ai_provider(cls, value: str) -> str:
+        provider = value.strip().lower()
+        if provider not in ("auto", "dashscope", "local", "fake"):
+            raise ValueError("AI_PROVIDER 只能是 auto/dashscope/local/fake")
+        return provider
 
     @property
     def cors_origin_list(self) -> list[str]:

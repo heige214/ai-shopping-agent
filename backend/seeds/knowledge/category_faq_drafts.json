@@ -1,0 +1,246 @@
+{
+  "version": 1,
+  "status": "pending",
+  "drafts": [
+    {
+      "scope": "category",
+      "category_slug": "clothing",
+      "doc_type": "faq",
+      "title": "服装 · 品类 FAQ 草稿",
+      "question": "棉质衣服第一次洗会缩水吗？",
+      "answer": "棉质首次清洗建议冷水、反面、短时间洗涤，避免高温烘干，通常不会明显缩水。",
+      "source": "seed",
+      "status": "pending"
+    },
+    {
+      "scope": "category",
+      "category_slug": "clothing",
+      "doc_type": "faq",
+      "title": "服装 · 品类 FAQ 草稿",
+      "question": "羊毛衫怎么洗才不起球？",
+      "answer": "建议冷水手洗或干洗，使用中性洗涤剂，平铺阴干，减少摩擦和长时间悬挂。",
+      "source": "seed",
+      "status": "pending"
+    },
+    {
+      "scope": "category",
+      "category_slug": "clothing",
+      "doc_type": "faq",
+      "title": "服装 · 品类 FAQ 草稿",
+      "question": "衬衫尺码应该怎么选？",
+      "answer": "可参考商品尺码表的身高、体重、胸围和腰围范围，介于两个尺码之间时偏宽松选小一码、偏合身选大一码。",
+      "source": "seed",
+      "status": "pending"
+    },
+    {
+      "scope": "category",
+      "category_slug": "clothing",
+      "doc_type": "faq",
+      "title": "服装 · 品类 FAQ 草稿",
+      "question": "深色衣服会掉色吗？",
+      "answer": "首次清洗建议单独冷水洗涤，不要长时间浸泡；深浅色分开可减少串色。",
+      "source": "seed",
+      "status": "pending"
+    },
+    {
+      "scope": "category",
+      "category_slug": "clothing",
+      "doc_type": "faq",
+      "title": "服装 · 品类 FAQ 草稿",
+      "question": "外套可以机洗吗？",
+      "answer": "需查看成分标签和商品详情洗护说明，羊毛/皮革类不建议机洗，棉/涤纶类可轻柔机洗。",
+      "source": "seed",
+      "status": "pending"
+    },
+    {
+      "scope": "category",
+      "category_slug": "clothing",
+      "doc_type": "faq",
+      "title": "服装 · 品类 FAQ 草稿",
+      "question": "针织衫变形了怎么恢复？",
+      "answer": "可冷水浸湿后轻轻整形，平铺阴干，不要悬挂或高温烘干。",
+      "source": "seed",
+      "status": "pending"
+    },
+    {
+      "scope": "category",
+      "category_slug": "footwear",
+      "doc_type": "faq",
+      "title": "鞋靴 · 品类 FAQ 草稿",
+      "question": "新鞋磨脚怎么办？",
+      "answer": "可先穿厚袜短时间适应，或在磨脚处贴防磨贴；皮革鞋可适当软化，不要暴力撑大。",
+      "source": "seed",
+      "status": "pending"
+    },
+    {
+      "scope": "category",
+      "category_slug": "footwear",
+      "doc_type": "faq",
+      "title": "鞋靴 · 品类 FAQ 草稿",
+      "question": "皮鞋淋雨了怎么处理？",
+      "answer": "先用干布吸干水分，塞入纸团定型，阴干后使用皮革护理剂，不要暴晒或烘烤。",
+      "source": "seed",
+      "status": "pending"
+    },
+    {
+      "scope": "category",
+      "category_slug": "footwear",
+      "doc_type": "faq",
+      "title": "鞋靴 · 品类 FAQ 草稿",
+      "question": "运动鞋可以机洗吗？",
+      "answer": "不建议机洗，可用软刷蘸清水局部清洁，鞋垫取出阴干，避免长时间浸泡。",
+      "source": "seed",
+      "status": "pending"
+    },
+    {
+      "scope": "category",
+      "category_slug": "footwear",
+      "doc_type": "faq",
+      "title": "鞋靴 · 品类 FAQ 草稿",
+      "question": "鞋码偏大偏小怎么选？",
+      "answer": "参考商品页脚长范围，脚背高或喜欢厚袜可适当选大半码，介于两码之间建议选大一码。",
+      "source": "seed",
+      "status": "pending"
+    },
+    {
+      "scope": "category",
+      "category_slug": "footwear",
+      "doc_type": "faq",
+      "title": "鞋靴 · 品类 FAQ 草稿",
+      "question": "帆布鞋怎么防止发黄？",
+      "answer": "清洗后用纸巾包裹鞋面阴干，避免阳光直射和高温烘干。",
+      "source": "seed",
+      "status": "pending"
+    },
+    {
+      "scope": "category",
+      "category_slug": "footwear",
+      "doc_type": "faq",
+      "title": "鞋靴 · 品类 FAQ 草稿",
+      "question": "鞋底发黄怎么清洁？",
+      "answer": "可用软刷和中性清洁剂轻刷，避免漂白剂，清洁后阴干。",
+      "source": "seed",
+      "status": "pending"
+    },
+    {
+      "scope": "category",
+      "category_slug": "bags",
+      "doc_type": "faq",
+      "title": "箱包 · 品类 FAQ 草稿",
+      "question": "帆布包怎么清洗？",
+      "answer": "可冷水轻柔手洗，使用中性洗涤剂，阴干，不要机洗甩干和暴晒。",
+      "source": "seed",
+      "status": "pending"
+    },
+    {
+      "scope": "category",
+      "category_slug": "bags",
+      "doc_type": "faq",
+      "title": "箱包 · 品类 FAQ 草稿",
+      "question": "皮革包怎么保养？",
+      "answer": "用湿布轻擦，定期使用皮革护理剂，避免雨淋、暴晒和重压。",
+      "source": "seed",
+      "status": "pending"
+    },
+    {
+      "scope": "category",
+      "category_slug": "bags",
+      "doc_type": "faq",
+      "title": "箱包 · 品类 FAQ 草稿",
+      "question": "行李箱尺寸怎么选？",
+      "answer": "20 寸适合短途登机，24 寸适合 3~5 天出行，28 寸适合长途或家庭出行，具体以航司规定为准。",
+      "source": "seed",
+      "status": "pending"
+    },
+    {
+      "scope": "category",
+      "category_slug": "bags",
+      "doc_type": "faq",
+      "title": "箱包 · 品类 FAQ 草稿",
+      "question": "包包五金掉色怎么办？",
+      "answer": "避免接触汗液和化学品，使用后软布擦拭并保持干燥；轻微掉色可使用专用护理布。",
+      "source": "seed",
+      "status": "pending"
+    },
+    {
+      "scope": "category",
+      "category_slug": "bags",
+      "doc_type": "faq",
+      "title": "箱包 · 品类 FAQ 草稿",
+      "question": "双肩包可以放电脑吗？",
+      "answer": "请查看商品详情中的电脑夹层尺寸，建议电脑尺寸不超过夹层标注上限。",
+      "source": "seed",
+      "status": "pending"
+    },
+    {
+      "scope": "category",
+      "category_slug": "bags",
+      "doc_type": "faq",
+      "title": "箱包 · 品类 FAQ 草稿",
+      "question": "包包有异味怎么处理？",
+      "answer": "放在通风处阴干，可放入活性炭包，避免暴晒和喷香水。",
+      "source": "seed",
+      "status": "pending"
+    },
+    {
+      "scope": "category",
+      "category_slug": "accessories",
+      "doc_type": "faq",
+      "title": "配饰 · 品类 FAQ 草稿",
+      "question": "银饰变黑怎么清洗？",
+      "answer": "可用软布蘸少量银饰清洁剂轻擦，避免用力刮擦，清洁后保持干燥密封。",
+      "source": "seed",
+      "status": "pending"
+    },
+    {
+      "scope": "category",
+      "category_slug": "accessories",
+      "doc_type": "faq",
+      "title": "配饰 · 品类 FAQ 草稿",
+      "question": "帽子怎么清洗？",
+      "answer": "按材质轻柔手洗，使用中性洗涤剂，平铺阴干，避免高温烘干变形。",
+      "source": "seed",
+      "status": "pending"
+    },
+    {
+      "scope": "category",
+      "category_slug": "accessories",
+      "doc_type": "faq",
+      "title": "配饰 · 品类 FAQ 草稿",
+      "question": "围巾起球正常吗？",
+      "answer": "羊毛/羊绒围巾摩擦后可能有轻微起球，可用毛球修剪器轻轻处理。",
+      "source": "seed",
+      "status": "pending"
+    },
+    {
+      "scope": "category",
+      "category_slug": "accessories",
+      "doc_type": "faq",
+      "title": "配饰 · 品类 FAQ 草稿",
+      "question": "腰带尺码怎么选？",
+      "answer": "参考商品页腰围范围，通常选比平时裤装腰围大一档的尺寸，具体以尺码表为准。",
+      "source": "seed",
+      "status": "pending"
+    },
+    {
+      "scope": "category",
+      "category_slug": "accessories",
+      "doc_type": "faq",
+      "title": "配饰 · 品类 FAQ 草稿",
+      "question": "手表可以戴着洗澡吗？",
+      "answer": "除标注防水的款式外，不建议佩戴洗澡、游泳或蒸桑拿，避免水汽进入。",
+      "source": "seed",
+      "status": "pending"
+    },
+    {
+      "scope": "category",
+      "category_slug": "accessories",
+      "doc_type": "faq",
+      "title": "配饰 · 品类 FAQ 草稿",
+      "question": "墨镜镜片怎么保养？",
+      "answer": "用镜布和中性清洁剂擦拭，避免用纸巾干擦和高温暴晒。",
+      "source": "seed",
+      "status": "pending"
+    }
+  ]
+}
