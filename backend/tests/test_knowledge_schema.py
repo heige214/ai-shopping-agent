@@ -73,9 +73,9 @@ def test_migration_creates_knowledge_and_support_tables(migrated_database):
         "knowledge_chunks",
         "chat_sessions",
         "chat_messages",
+        "chat_actions",
         "support_tickets",
     } <= tables
-    assert "chat_actions" not in tables
     assert "knowledge_candidates" not in tables
     assert "product_field_history" not in tables
 

@@ -15,7 +15,7 @@
 | M2 | 购物车、地址、订单、模拟支付/发货 | 已完成 | m2 |
 | M3 | 知识库 + RAG 商品客服 | 已完成 | m3 |
 | M4 | 导购聊天、意图槽位、澄清、尺码 | 已完成 | m4 |
-| M5 | 图片理解、语音、AI 加购 | 未开始 | — |
+| M5 | 图片理解、语音、AI 加购 | 已完成 | m5 |
 | M6 | 转人工、客服端队列/工作台 | 未开始 | — |
 | M7 | 知识提炼、审核、入库 | 未开始 | — |
 | M8 | 评测集、消融实验、指标 | 未开始 | — |
@@ -30,6 +30,39 @@
 ## 模块记录
 
 <!-- 每完成一个模块，把记录加在这里的最上面；第一条从 M0 开始。 -->
+
+## 2026-11-14 · M5 图片理解、语音转写、AI 加购
+
+- 状态：已完成（分支 `m5-multimodal-cart`，tag `m5`）
+- 本次目标：首页支持图片找货与语音转写回填；在 M4 导购上增加两阶段 AI 加购（action_card 确认/取消），不回归 M0-M4.1。
+- 完成内容：
+  - AI 抽象：新增 `VisionClient` / `ASRClient` 与 `VisionResult`；`DashScopeVisionClient` 走 OpenAI 兼容多模态接口（默认 `qwen3-vl-flash`），`DashScopeASRClient` 走百炼文件上传策略 + 异步 `paraformer-v2` 任务；无 key/`AI_PROVIDER=fake` 使用 `LocalVisionClient` / `LocalASRClient` / `FakeVisionClient` / `FakeASRClient`，测试不访问真实百炼。
+  - 上传：`POST /api/uploads/image` 返回 `{url}`，`POST /api/uploads/voice` 返回 `{url, transcript}`；均需登录，校验 MIME + 扩展名 + 文件魔数 + 大小（图片 5MB、语音 10MB 可配置），UUID 文件名落盘 `backend/static/uploads/`，目录已 gitignore；语音转写失败删除文件并返回 502 可重试提示。
+  - 图片/语音消息：guide 允许 `content_type=image/voice`，support 仍仅文字；图片理解输出 `category_path/attributes/description/confidence`，并入 `GuideQuery` 后复用 M4 结构化 + 向量 + RRF + 重排；识别失败 `meta.degraded=true` 并提示“已按文字条件搜索”。语音转写只回填输入框，用户编辑确认后以 voice 消息发送。
+  - 加购：新增 `chat_actions` 表与迁移 `20261114_0005`；`products` 事件生成时写 `slot_state.last_products`（≤8）；本地/LLM 解析“第 N 件 / 这个 / 显式商品名 + 尺码 + 数量”；创建动作校验商品/SKU/库存，SSE `meta → action → done`；确认接口锁 action/SKU 并复用 `cart_service.add_cart_item(commit=False)`，成功 executed、失败 failed + 原因 + 同款可售尺码；取消幂等，越权 404。
+  - 前端：首页输入栏新增图片按钮（jpg/png/webp ≤5MB、预览/移除）、语音按钮（MediaRecorder 录音、计时、取消、转写回填、不自动发送）；用户气泡展示缩略图/语音条；`action_card` 展示商品、颜色/尺码/数量、确认/取消、成功后“去购物车”并刷新角标、失败展示原因与可换尺码。
+  - E2E：新增 1×1 PNG fixture 与 Chromium 假麦克风；覆盖图片找货、语音转写回填发送、第二件确认/去购物车/重复确认幂等/取消幂等、库存不足失败卡。
+- 改动文件 / 目录：
+  - `backend/app/ai/{base,asr,vision,deps,fake,guide_slots}.py`、`app/ai/prompts/{guide_parse,guide_vision}.py`
+  - `backend/app/modules/uploads/`、`app/modules/guide/{pipeline,router,schemas,cart,actions}.py`、`app/modules/support/{models,service,router}.py`、`app/modules/commerce/cart_service.py`
+  - `backend/alembic/versions/20261114_0005_create_chat_actions.py`
+  - `backend/tests/{test_uploads_api,test_vision_guide,test_guide_cart,test_knowledge_schema,conftest}.py`
+  - `frontend/src/api/{uploads,guide}.ts`、`types/guide.ts`、`components/guide/{VoiceRecorder,GuideActionCard}.vue`、`views/user/HomeView.vue`
+  - `frontend/tests/e2e/guide.spec.ts`、`tests/fixtures/sample.png`、`playwright.config.ts`
+  - `README.md`、`backend/.env.example`、`backend/requirements.txt`、`.gitignore`
+- DB 迁移：`20261114_0005_create_chat_actions`
+- 新增环境变量（均可选）：`VISION_MODEL=qwen3-vl-flash`、`ASR_MODEL=paraformer-v2`、`DASHSCOPE_NATIVE_BASE_URL`、`MAX_IMAGE_UPLOAD_MB=5`、`MAX_VOICE_UPLOAD_MB=10`、`UPLOAD_DIR=static/uploads`
+- 测试与验收：
+  - 命令：`cd backend && ./.venv/Scripts/python.exe -m pytest -q`；`cd frontend && npm run build`；`cd frontend && npm run test:e2e`
+  - 结果：后端 `215 passed`（210.99s；原 193 + 新增 22）；前端构建成功；E2E `12 passed`（58.4s；原 8 条不回归 + 新增 4 条）。
+  - E2E 使用 `AI_PROVIDER=fake`、`FakeVisionClient` / `FakeASRClient` 与 Chromium 假麦克风，不访问真实 DashScope。
+- 遗留问题：
+  - [后续] 真实百炼图片/语音未做手工验收，自动测试只覆盖 fake；手工验收需配置 `DASHSCOPE_API_KEY` 后上传真实商品图与录音。
+  - [备注] 上传文件不入库；`backend/static/uploads/` 只做本地落盘，长期运行需按需清理。
+  - [备注] `chat_actions` 状态机当前只实现 `pending → executed/cancelled/failed`；`confirmed` 预留给后续更细的执行阶段。
+  - [备注] 图片理解依赖模型输出属性与种子属性写法一致；不一致时 M4 放宽逻辑会兜底，但可能降低精确命中。
+- 下一模块依赖：M6 可复用 `support_tickets`、`chat_sessions` 与现有 SSE 结构；转人工队列/工作台/WebSocket/会话摘要不在 M5。
+- commit：M5 分支 `m5-multimodal-cart`，tag `m5`（见 `git log`）
 
 ## 2026-11-14 · M4.1 导购历史会话抽屉
 

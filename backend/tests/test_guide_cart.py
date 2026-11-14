@@ -91,6 +91,26 @@ def use_guide_llm(llm: FakeGuideLLM) -> None:
     app.dependency_overrides[get_embedding_client] = lambda: FakeEmbeddingClient()
 
 
+def test_chat_actions_schema_rejects_invalid_status(
+    client, guide_catalog, execute_sql
+):
+    headers = register_and_login(client, execute_sql, "cart_schema")
+    session_id = create_session(client, headers)
+    send(client, headers, session_id, "衬衫")
+    message_id = client.get(
+        f"/api/chat/sessions/{session_id}/messages", headers=headers
+    ).json()["items"][-1]["id"]
+
+    with pytest.raises(Exception):
+        execute_sql(
+            "INSERT INTO chat_actions "
+            "(session_id, message_id, action_type, payload, status) "
+            "VALUES (:session_id, :message_id, 'add_to_cart', "
+            "'{}'::jsonb, 'bogus')",
+            {"session_id": session_id, "message_id": message_id},
+        )
+
+
 def test_local_cart_slot_parsing():
     query = extract_local_guide_query(
         "把第二件加入购物车", {"last_products": [{"title": "a"}]}
