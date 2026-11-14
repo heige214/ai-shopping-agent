@@ -11,10 +11,24 @@ from pydantic import BaseModel, ValidationError
 
 from app.ai.base import (
     AnswerabilityResult,
+    GuideQuery,
+    GuideRerank,
     IntentResult,
     LLMError,
     LLMTimeoutError,
     SupportPlan,
+)
+from app.ai.prompts.guide_answer import (
+    GUIDE_ANSWER_SYSTEM,
+    build_guide_answer_user,
+)
+from app.ai.prompts.guide_parse import (
+    GUIDE_PARSE_SYSTEM,
+    build_guide_parse_user,
+)
+from app.ai.prompts.guide_rerank import (
+    GUIDE_RERANK_SYSTEM,
+    build_guide_rerank_user,
 )
 from app.ai.prompts.support_answer import ANSWER_SYSTEM, build_answer_user
 from app.ai.prompts.support_answerable import (
@@ -147,6 +161,34 @@ class DashScopeSupportLLM:
             temperature=0.1,
         )
 
+    async def parse_guide_query(
+        self,
+        message: str,
+        slot_state: dict,
+        profile: dict,
+        category_hint: str,
+    ) -> GuideQuery:
+        return await self._structured(
+            GUIDE_PARSE_SYSTEM,
+            build_guide_parse_user(
+                message, slot_state, profile, category_hint
+            ),
+            GuideQuery,
+            temperature=0.1,
+        )
+
+    async def rerank_products(
+        self,
+        query: GuideQuery,
+        candidates: list[dict],
+    ) -> GuideRerank:
+        return await self._structured(
+            GUIDE_RERANK_SYSTEM,
+            build_guide_rerank_user(query.model_dump(), candidates),
+            GuideRerank,
+            temperature=0.1,
+        )
+
     async def judge_answerable(
         self,
         question: str,
@@ -218,3 +260,61 @@ class DashScopeSupportLLM:
             raise LLMTimeoutError("LLM 流式回答超时") from exc
         except httpx.HTTPError as exc:
             raise LLMError(f"LLM 流式请求失败：{exc}") from exc
+
+    async def stream_guide_answer(
+        self,
+        query: GuideQuery,
+        products: list[dict],
+        relaxed: list[str],
+        profile: dict,
+    ) -> AsyncIterator[str]:
+        payload = {
+            "model": self.chat_model,
+            "messages": [
+                {"role": "system", "content": GUIDE_ANSWER_SYSTEM},
+                {
+                    "role": "user",
+                    "content": build_guide_answer_user(
+                        query.model_dump(), products, relaxed, profile
+                    ),
+                },
+            ],
+            "temperature": 0.3,
+            "stream": True,
+        }
+        timeout = httpx.Timeout(self.timeout_seconds)
+        try:
+            async with httpx.AsyncClient(timeout=timeout) as client:
+                async with client.stream(
+                    "POST",
+                    f"{self.base_url}/chat/completions",
+                    headers={"Authorization": f"Bearer {self.api_key}"},
+                    json=payload,
+                ) as response:
+                    if response.status_code >= 400:
+                        body = await response.aread()
+                        raise LLMError(
+                            f"LLM HTTP {response.status_code}: "
+                            f"{body.decode('utf-8', 'ignore')[:200]}"
+                        )
+                    async for line in response.aiter_lines():
+                        if not line.startswith("data:"):
+                            continue
+                        data = line[5:].strip()
+                        if data == "[DONE]":
+                            break
+                        try:
+                            chunk = json.loads(data)
+                        except json.JSONDecodeError:
+                            continue
+                        choices = chunk.get("choices") or []
+                        if not choices:
+                            continue
+                        delta = choices[0].get("delta") or {}
+                        text = delta.get("content")
+                        if text:
+                            yield str(text)
+        except httpx.TimeoutException as exc:
+            raise LLMTimeoutError("LLM 导购回答超时") from exc
+        except httpx.HTTPError as exc:
+            raise LLMError(f"LLM 导购流式请求失败：{exc}") from exc

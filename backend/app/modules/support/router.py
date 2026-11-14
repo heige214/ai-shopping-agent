@@ -8,11 +8,16 @@ from fastapi import APIRouter, Depends, Query, Response, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.ai.base import EmbeddingClient, SupportLLM
-from app.ai.deps import get_embedding_client, get_support_llm
+from app.ai.base import EmbeddingClient, GuideLLM, SupportLLM
+from app.ai.deps import (
+    get_embedding_client,
+    get_guide_llm,
+    get_support_llm,
+)
 from app.db.session import get_db
 from app.modules.auth.deps import get_current_user
 from app.modules.auth.models import User
+from app.modules.guide.pipeline import stream_guide_turn
 from app.modules.support import service
 from app.modules.support.pipeline import stream_support_turn
 from app.modules.support.schemas import (
@@ -76,17 +81,29 @@ async def send_message(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     llm: SupportLLM = Depends(get_support_llm),
+    guide_llm: GuideLLM = Depends(get_guide_llm),
     embedding_client: EmbeddingClient = Depends(get_embedding_client),
 ) -> StreamingResponse:
-    """发送文字消息并以 SSE 返回 AI 回答。"""
+    """发送文字消息并以 SSE 返回 AI 回答；按会话类型分流客服/导购。"""
     session, user_message = await service.append_user_message(
         db, current_user, session_id, data
     )
 
     async def event_stream() -> AsyncIterator[str]:
-        async for event, payload in stream_support_turn(
-            db, session, user_message, llm, embedding_client
-        ):
+        if session.type == "guide":
+            events = stream_guide_turn(
+                db,
+                session,
+                user_message,
+                current_user,
+                guide_llm,
+                embedding_client,
+            )
+        else:
+            events = stream_support_turn(
+                db, session, user_message, llm, embedding_client
+            )
+        async for event, payload in events:
             yield _sse(event, payload)
 
     return StreamingResponse(

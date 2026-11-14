@@ -4,10 +4,13 @@ from collections.abc import AsyncIterator
 
 from app.ai.base import (
     AnswerabilityResult,
+    GuideQuery,
+    GuideRerank,
     IntentResult,
     LLMError,
     SupportPlan,
 )
+from app.ai.guide_local import LocalGuideLLM
 from app.ai.local import LocalSupportLLM, _extract_topic
 from app.ai.size_rules import parse_size_query
 
@@ -109,6 +112,71 @@ class FakeSupportLLM(LocalSupportLLM):
         if self.answer_text is None:
             async for token in super().stream_answer(
                 question, facts_text, chunks_text, partial
+            ):
+                yield token
+            return
+        for index in range(0, len(self.answer_text), 4):
+            yield self.answer_text[index : index + 4]
+
+
+class FakeGuideLLM(LocalGuideLLM):
+    """测试与 E2E 使用：默认走本地规则，可按用例注入固定结果或失败。"""
+
+    def __init__(
+        self,
+        *,
+        query: GuideQuery | dict | None = None,
+        rerank: GuideRerank | dict | None = None,
+        answer_text: str | None = None,
+        fail_parse: bool = False,
+        fail_rerank: bool = False,
+        fail_stream: bool = False,
+    ) -> None:
+        self.query = query
+        self.rerank = rerank
+        self.answer_text = answer_text
+        self.fail_parse = fail_parse
+        self.fail_rerank = fail_rerank
+        self.fail_stream = fail_stream
+
+    async def parse_guide_query(
+        self,
+        message: str,
+        slot_state: dict,
+        profile: dict,
+        category_hint: str,
+    ) -> GuideQuery:
+        if self.fail_parse:
+            raise LLMError("fake guide parse failure")
+        if self.query is not None:
+            return GuideQuery.model_validate(self.query)
+        return await super().parse_guide_query(
+            message, slot_state, profile, category_hint
+        )
+
+    async def rerank_products(
+        self,
+        query: GuideQuery,
+        candidates: list[dict],
+    ) -> GuideRerank:
+        if self.fail_rerank:
+            raise LLMError("fake guide rerank failure")
+        if self.rerank is not None:
+            return GuideRerank.model_validate(self.rerank)
+        return await super().rerank_products(query, candidates)
+
+    async def stream_guide_answer(
+        self,
+        query: GuideQuery,
+        products: list[dict],
+        relaxed: list[str],
+        profile: dict,
+    ) -> AsyncIterator[str]:
+        if self.fail_stream:
+            raise LLMError("fake guide stream failure")
+        if self.answer_text is None:
+            async for token in super().stream_guide_answer(
+                query, products, relaxed, profile
             ):
                 yield token
             return

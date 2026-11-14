@@ -81,11 +81,42 @@ async def _get_owned_session(
 async def create_session(
     db: AsyncSession, user: User, data: SessionCreate
 ) -> tuple[SessionOut, bool]:
-    if data.type != "support":
+    if data.type not in ("support", "guide"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="M3 暂只支持商品客服会话",
+            detail="不支持的会话类型",
         )
+    if data.type == "guide":
+        if not data.new:
+            existing = await db.scalar(
+                select(ChatSession)
+                .where(
+                    ChatSession.user_id == user.id,
+                    ChatSession.type == "guide",
+                    ChatSession.status == "active",
+                )
+                .order_by(
+                    ChatSession.updated_at.desc(), ChatSession.id.desc()
+                )
+                .limit(1)
+            )
+            if existing is not None:
+                return _session_out(existing), False
+        session = ChatSession(
+            user_id=user.id,
+            type="guide",
+            product_id=None,
+            title=None,
+            status="active",
+            slot_state={},
+        )
+        db.add(session)
+        await db.commit()
+        created = await db.scalar(
+            select(ChatSession).where(ChatSession.id == session.id)
+        )
+        assert created is not None
+        return _session_out(created), True
     if data.product_id is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -142,10 +173,10 @@ async def create_session(
 async def list_sessions(
     db: AsyncSession, user: User, session_type: str | None
 ) -> list[SessionOut]:
-    if session_type is not None and session_type != "support":
+    if session_type is not None and session_type not in ("support", "guide"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="M3 暂只支持商品客服会话",
+            detail="不支持的会话类型",
         )
     stmt = select(ChatSession).where(ChatSession.user_id == user.id)
     if session_type:
@@ -193,7 +224,7 @@ async def append_user_message(
     if data.content_type != "text":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="M3 暂只支持文字消息",
+            detail="当前仅支持文字消息",
         )
     text = str((data.content or {}).get("text") or "").strip()
     if not text:
@@ -226,6 +257,11 @@ async def escalate_session(
     db: AsyncSession, user: User, session_id: int
 ) -> tuple[SupportTicket, ChatSession]:
     session = await _get_owned_session(db, user, session_id, lock=True)
+    if session.type != "support":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="导购会话不支持转人工",
+        )
     if session.status == "closed":
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="会话已结束"

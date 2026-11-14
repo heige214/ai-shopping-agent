@@ -189,6 +189,204 @@ def sample_catalog(clean_catalog):
 
 
 @pytest.fixture
+def guide_catalog(clean_catalog):
+    """导购测试用商品集：衬衫 10、运动鞋 15、双肩包 15，含尺码表与 fake 向量。"""
+    from decimal import Decimal
+
+    from app.ai.embeddings import FakeEmbeddingClient
+    from app.modules.catalog.models import Category, Product
+
+    clothing_chart = {
+        "type": "clothing",
+        "unit": "cm",
+        "rows": [
+            {"size": "S", "height": [155, 165], "weight": [45, 55]},
+            {"size": "M", "height": [165, 172], "weight": [55, 65]},
+            {"size": "L", "height": [170, 178], "weight": [65, 75]},
+            {"size": "XL", "height": [176, 184], "weight": [75, 85]},
+        ],
+    }
+    shoes_chart = {
+        "type": "shoes",
+        "unit": "mm",
+        "rows": [
+            {"size": "39", "foot_length": [245, 250]},
+            {"size": "40", "foot_length": [250, 255]},
+            {"size": "41", "foot_length": [255, 260]},
+        ],
+    }
+    shirt_specs = [
+        ("G01", "蓝色纯棉薄款衬衫", "蓝色", "纯棉", "薄款", 109),
+        ("G02", "蓝色亚麻薄款衬衫", "蓝色", "亚麻", "薄款", 129),
+        ("G03", "黑色纯棉常规衬衫", "黑色", "纯棉", "常规", 169),
+        ("G04", "白色亚麻薄款衬衫", "白色", "亚麻", "薄款", 199),
+        ("G05", "蓝色聚酯纤维加厚衬衫", "蓝色", "聚酯纤维", "加厚", 259),
+        ("G06", "米白棉麻薄款衬衫", "米白", "棉麻", "薄款", 149),
+        ("G07", "藏青纯棉常规衬衫", "藏青", "纯棉", "常规", 189),
+        ("G08", "浅蓝亚麻常规衬衫", "浅蓝", "亚麻", "常规", 139),
+        ("G09", "卡其真丝薄款衬衫", "卡其", "真丝", "薄款", 309),
+        ("G10", "棕色牛津纺常规衬衫", "棕色", "牛津纺", "常规", 389),
+    ]
+    colors = ["黑色", "白色", "灰色", "蓝色", "米白"]
+    sneaker_specs = [
+        (
+            f"S{index:02d}",
+            f"{colors[index % len(colors)]}运动鞋 {index}",
+            colors[index % len(colors)],
+            "网布+橡胶" if index % 2 else "皮革",
+            159 + index * 20,
+        )
+        for index in range(1, 16)
+    ]
+    backpack_specs = [
+        (
+            f"B{index:02d}",
+            f"{colors[index % len(colors)]}双肩包 {index}",
+            colors[index % len(colors)],
+            "帆布" if index % 2 else "尼龙",
+            89 + index * 20,
+        )
+        for index in range(1, 16)
+    ]
+
+    async def _create() -> dict:
+        engine = create_async_engine(TEST_DATABASE_URL, poolclass=NullPool)
+        embedder = FakeEmbeddingClient()
+        try:
+            async with AsyncSession(engine, expire_on_commit=False) as session:
+                clothing = Category(
+                    name="服装", slug="clothing", level=1, sort_order=1
+                )
+                footwear = Category(
+                    name="鞋靴", slug="footwear", level=1, sort_order=2
+                )
+                bags = Category(
+                    name="箱包", slug="bags", level=1, sort_order=3
+                )
+                session.add_all([clothing, footwear, bags])
+                await session.flush()
+
+                shirts = Category(
+                    name="衬衫",
+                    slug="shirts",
+                    level=2,
+                    parent_id=clothing.id,
+                    sort_order=1,
+                    size_chart_template=clothing_chart,
+                )
+                sneakers = Category(
+                    name="运动鞋",
+                    slug="sneakers",
+                    level=2,
+                    parent_id=footwear.id,
+                    sort_order=1,
+                )
+                backpacks = Category(
+                    name="双肩包",
+                    slug="backpacks",
+                    level=2,
+                    parent_id=bags.id,
+                    sort_order=1,
+                )
+                session.add_all([shirts, sneakers, backpacks])
+                await session.flush()
+
+                records: list[Product] = []
+                for code, title, color, material, thickness, price in shirt_specs:
+                    records.append(
+                        Product(
+                            product_code=code,
+                            category_id=shirts.id,
+                            title=title,
+                            brand="测试品牌",
+                            price=Decimal(str(price)),
+                            main_image=f"/static/products/{code}.png",
+                            attributes={
+                                "color": color,
+                                "material": material,
+                                "thickness": thickness,
+                            },
+                            size_chart=clothing_chart,
+                            status="on_sale",
+                            sales_count=100,
+                        )
+                    )
+                for code, title, color, material, price in sneaker_specs:
+                    records.append(
+                        Product(
+                            product_code=code,
+                            category_id=sneakers.id,
+                            title=title,
+                            brand="测试品牌",
+                            price=Decimal(str(price)),
+                            main_image=f"/static/products/{code}.png",
+                            attributes={
+                                "color": color,
+                                "material": material,
+                                "thickness": "常规",
+                            },
+                            size_chart=shoes_chart,
+                            status="on_sale",
+                            sales_count=80,
+                        )
+                    )
+                for code, title, color, material, price in backpack_specs:
+                    records.append(
+                        Product(
+                            product_code=code,
+                            category_id=backpacks.id,
+                            title=title,
+                            brand="测试品牌",
+                            price=Decimal(str(price)),
+                            main_image=f"/static/products/{code}.png",
+                            attributes={
+                                "color": color,
+                                "material": material,
+                            },
+                            status="on_sale",
+                            sales_count=60,
+                        )
+                    )
+                session.add_all(records)
+                await session.flush()
+
+                texts = [
+                    (
+                        f"{record.title} {record.brand or ''} "
+                        + " ".join(
+                            f"{key}{value}"
+                            for key, value in (record.attributes or {}).items()
+                        )
+                    )
+                    for record in records
+                ]
+                vectors = await embedder.embed_texts(texts)
+                for record, vector in zip(records, vectors):
+                    record.embedding = vector
+                await session.commit()
+                return {
+                    "category_ids": {
+                        "clothing": clothing.id,
+                        "shirts": shirts.id,
+                        "footwear": footwear.id,
+                        "sneakers": sneakers.id,
+                        "bags": bags.id,
+                        "backpacks": backpacks.id,
+                    },
+                    "product_ids": {
+                        record.product_code: record.id for record in records
+                    },
+                    "titles": {
+                        record.product_code: record.title for record in records
+                    },
+                }
+        finally:
+            await engine.dispose()
+
+    return asyncio.run(_create())
+
+
+@pytest.fixture
 def execute_sql():
     """在测试库执行一条 SQL，用于构造库存/超时等边界状态。"""
 

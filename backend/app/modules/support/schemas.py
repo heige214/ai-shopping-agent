@@ -7,10 +7,11 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class SessionCreate(BaseModel):
-    """M3 只接受 type=support；guide 由 service 返回 400。"""
+    """创建会话：support 复用同商品会话；guide 默认复用最近 active，new=true 新建。"""
 
     type: str = "support"
     product_id: int | None = None
+    new: bool = False
 
 
 class SupportProduct(BaseModel):

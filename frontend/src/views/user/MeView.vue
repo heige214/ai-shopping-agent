@@ -101,7 +101,12 @@ onMounted(async () => {
           is-link
           @click="router.push('/addresses')"
         />
-        <van-cell title="导购会话" value="M4 上线" />
+        <van-cell
+          title="AI 找货"
+          is-link
+          value="去逛逛"
+          @click="router.push('/')"
+        />
       </van-cell-group>
 
       <van-button block class="logout-button" @click="handleLogout">

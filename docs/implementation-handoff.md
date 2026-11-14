@@ -10,12 +10,13 @@
   - `docs/mockups/screens-agent.png`：客服端队列、会话工作台、知识审核
   - HTML 源文件与 `mockup.css` 在同一目录。
 - 商品图片：`backend/static/products` 共 300 张（4 个一级品类 × 75），鞋靴 75 张已补齐。
-- 前置状态（2026-11-14）：`git` 已初始化；M0、M1、M2、M3 已完成；商品图本地备份尚未执行。
+- 前置状态（2026-11-14）：`git` 已初始化；M0、M1、M2、M3、M4 已完成；商品图本地备份尚未执行。
 - 主项目骨架与商品域已完成：M0 认证/双 Tab/迁移/测试基线；M1 品类/商品/SKU/收藏/分类列表/商品详情/可复用商品发现组件。
 - 交易域已完成（M2）：购物车、地址、订单、模拟支付/取消/确认收货、客服端已支付订单发货；库存扣减/恢复、支付幂等、超时取消、用户数据隔离与 `role ∈ {agent, admin}` 守卫均已落地。
 - 知识库与商品客服已完成（M3）：913 篇知识文档 / 1813 切片（商品详情、尺码、商品 FAQ、一级品类洗护、平台政策）；商品 + 一级品类 + 平台三级范围混合检索（向量 top20 + 关键词 top20 → RRF top8）；`/api/chat/sessions` 与 SSE 消息接口；商品客服页支持流式回答、引用、反馈、每会话一次澄清、固定兜底与最小转人工 waiting 工单。无 DashScope key 时使用本地规则 + 关键词检索，知识种子 embedding 可为 NULL。
 - M3 补充（2026-11-14，分支 `fix/support-size-availability`）：新增尺码库存“商品事实前置层”，`有XS的吗` 这类不带“尺码/码”的问题会先查商品库存与尺码表，再决定是否检索知识库；引用 chip 可点击，尺码引用用表格展示；`seed_knowledge.py` 支持 `--reembed` 在切换真实 embedding 模型后重建向量。真实百炼 Key 已配置，1813 条知识向量已用 `text-embedding-v3` 全量重建，后端当前使用 `qwen-plus`。
 - M3 Agent（2026-11-14，同分支）：客服主链路改为 LangGraph 受控工作流 `plan → tools`，由规划模型选择 `product_facts` / `search_knowledge` / `size_stock` 工具，再流式回答；移除独立意图和可回答性模型调用，开放问题（如“这个小孩子能带吗”）不再被固定意图菜单反问。引用按问题主题收窄。M4 可直接复用 `run_support_agent` 与 `SupportPlan`。
+- M4 导购（2026-11-14，分支 `m4-guide-agent`，tag `m4`）：首页改为导购聊天；`type=guide` 默认复用最近 active 会话，`new=true` 显式新建，不写问候，escalate 返回 400；槽位多轮合并；结构化过滤 + 商品向量 top30 → RRF → LLM 重排 6~8 张卡；无结果按厚薄→材质→价格放宽并澄清一次；新增 `GET /api/products/{id}/size-recommendation`；商品向量已用 `text-embedding-v3` 补齐 300/300。后端 193 pytest、前端 build、8 条 E2E 通过。
 - 本地开发端口：后端 8100（本机 Windows 保留 7997–8096，8000 不可用），前端 Vite 5175（避开本机其他项目常占用的 5173/5174），`/api` 代理指向 8100。
 - 本地运行：以 `README.md` 的「本地启动」为准（Docker DB 5433、后端 8100、前端 5175、demo/demo123；客服 agent/agent123；商品与知识种子分别用 `seed_catalog` / `seed_knowledge` 导入）。
 
@@ -79,20 +80,27 @@
 
 新窗口先读：
 
-- `docs/superpowers/specs/2026-11-11-ai-shopping-agent-design.md`（重点 §15 M4，以及导购聊天/槽位/澄清/尺码推荐相关章节）
-- `docs/superpowers/plans/2026-11-13-m0-project-skeleton.md`、`2026-11-13-m1-product-catalog.md`、`2026-11-13-m2-commerce.md`、`2026-11-13-m3-knowledge-rag.md`（已完成，作为基线参考）
-- `README.md`（本地启动、测试、重置步骤、demo/agent 账号、AI 可选配置）
+- `docs/superpowers/specs/2026-11-11-ai-shopping-agent-design.md`（重点 §15 M5、§9.2.1 图片/语音预处理、§10.4 上传、§10.3 `chat_actions`、§12.3 加购状态机）
+- `docs/superpowers/plans/` 下 M0~M4 计划（已完成，作为基线参考）
+- `README.md`（本地启动、商品/知识/商品向量种子、测试、demo/agent 账号、AI 可选配置）
 - `docs/implementation-handoff.md`
-- `docs/progress.md`（M0~M3 记录）
+- `docs/progress.md`（M0~M4 记录）
 
-然后进入 M4「导购聊天、意图槽位、澄清、尺码推荐」：复用 M3 的 `app/ai/` 抽象、`knowledge_chunks` 检索、`chat_sessions` / `chat_messages` 与 SSE 基础设施；不要改 M0 认证契约、M1 商品 DTO、M2 交易契约和 M3 商品客服契约。
+M4 已完成，交接要点：
 
-M4 注意：
+- guide 会话：`POST /api/chat/sessions` 的 `type=guide` 默认复用最近 active；`new=true` 显式新建；guide 不写问候消息；guide escalate 返回 400。SSE 顺序固定 `meta → token* → products → done`。
+- 槽位：`slot_state={"query": GuideQuery, "clarify_count": int}`；`merge_guide_query` 负责多轮合并、切换品类/重置词清空、档案身高体重兜底；改槽位逻辑时同步补 `tests/test_guide_slots.py`。
+- 检索：`app/modules/guide/search.py` 负责品类子树、属性/价格过滤、商品向量 top30、RRF 与放宽；放宽顺序厚薄→材质→价格，颜色/品类不放宽。
+- 尺码：`app/modules/guide/size.py` 与 `GET /api/products/{id}/size-recommendation`；商品详情与导购卡都展示 `recommended_size/size_reason`。
+- 商品向量：`scripts/seed_product_embeddings.py`；切换 embedding 模型后必须 `--reembed`。开发库当前 300 条已有 `text-embedding-v3` 向量。
+- 前端：首页 `HomeView.vue` 是导购聊天，空状态组件 `components/guide/GuideEmptyState.vue`，商品卡 `GuideProductCard.vue`；E2E `guide.spec.ts` 覆盖聊天与尺码卡。M4 起首页品类入口是“发送查询”按钮，`catalog.spec.ts` / `commerce.spec.ts` 已改为直达 `/category/1`，新窗口不要改回链接假设。
+- 不要改 M0 认证契约、M1 商品 DTO、M2 交易契约、M3 商品客服契约与 M4 导购 SSE 顺序。
 
-- M3 的 `POST /api/chat/sessions` 只接受 `type=support`，`guide` 返回 400；M4 需在保持 support 行为不变的前提下放开 guide 并补导购槽位/澄清策略。
-- M3 的检索范围是单商品 + 一级品类 + 平台；M4 导购需要跨商品召回，建议新增商品级向量或复用关键词召回，不要直接放宽商品客服的 scope 条件。
-- M3 已引入 `langgraph` 与 `app/modules/support/agent.py` 的 `run_support_agent`；M4 可扩展工具集（商品搜索、尺码推荐、加购），不要把导购工具塞进 M3 的 `CITATION_TYPES_BY_TOPIC` 逻辑里，建议按模块拆分工具注册。
-- `products.embedding` 仍为 NULL，M4 如需商品向量应单独生成并做幂等/去重，不要改写 M3 的知识切片表。
-- M3 未接真实 DashScope key；M4 开发时先用 `AI_PROVIDER=fake` / `local` 保证测试无网络，再手工验证真实模型。
+然后进入 M5「图片理解、语音转写、AI 加购」：
 
-M1 已消费 `backend/static/products` 中 300 张商品图，不再做 AI 生图；M2 已完成交易闭环，M3 已完成商品客服，后续模块不重新生成商品图、不改订单状态机与 M3 support 契约。
+- 图片/语音：复用 guide 会话；`chat_messages.content_type` 已允许 `image` / `voice`，新增 `POST /api/uploads/image`、`POST /api/uploads/voice`，图片走 Qwen-VL 结构化描述，语音走 Paraformer 转写后回填输入框由用户确认发送。
+- AI 加购：`chat_actions` 表尚未创建，需要新迁移；两阶段 `pending → executed/cancelled`，确认接口幂等；加购 SSE 顺序按设计 `meta → action → done`。
+- 复用 M4 的商品卡、`recommended_size` 与尺码接口；不要重写 M4 guide 检索与 M3 support 管线。
+- 测试/E2E 继续用 `AI_PROVIDER=fake`，真实 key 仅放 `.env`；新增多模态用例不要访问真实 DashScope。
+
+M1 已消费 `backend/static/products` 中 300 张商品图，不再做 AI 生图；M2 已完成交易闭环，M3 已完成商品客服，M4 已完成导购聊天，后续模块不重新生成商品图、不改订单状态机与 M3/M4 契约。
