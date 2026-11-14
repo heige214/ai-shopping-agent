@@ -21,8 +21,7 @@ test('列表 → 详情 → 收藏 → 我的收藏 → 取消收藏', async ({ 
   await page.getByRole('button', { name: '登录', exact: true }).click()
 
   await expect(page).toHaveURL('/')
-  await expect(page.getByText('你好，小鹿')).toBeVisible()
-  await expect(page.getByText('按品类逛逛')).toBeVisible()
+  await expect(page.locator('.guide-input')).toBeVisible()
 
   // 首页 M4 起是导购聊天，分类入口改为发送查询；分类页仍可直接访问
   await page.goto('/category/1')

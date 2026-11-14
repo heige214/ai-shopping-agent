@@ -14,7 +14,7 @@
 | M1 | 商品域 + 种子数据 + 商品详情 | 已完成 | m1-product-catalog |
 | M2 | 购物车、地址、订单、模拟支付/发货 | 已完成 | m2 |
 | M3 | 知识库 + RAG 商品客服 | 已完成 | m3 |
-| M4 | 导购聊天、意图槽位、澄清、尺码 | 未开始 | — |
+| M4 | 导购聊天、意图槽位、澄清、尺码 | 已完成 | m4 |
 | M5 | 图片理解、语音、AI 加购 | 未开始 | — |
 | M6 | 转人工、客服端队列/工作台 | 未开始 | — |
 | M7 | 知识提炼、审核、入库 | 未开始 | — |
@@ -30,6 +30,43 @@
 ## 模块记录
 
 <!-- 每完成一个模块，把记录加在这里的最上面；第一条从 M0 开始。 -->
+
+## 2026-11-14 · M4 AI 导购聊天
+
+- 状态：已完成（分支 `m4-guide-agent`，tag `m4`）
+- 本次目标：首页导购聊天、自然语言找货、多轮槽位合并、结构化 + 商品向量混合检索与重排、无结果放宽/澄清、按档案与尺码表推荐尺码。
+- 完成内容：
+  - 会话：复用 `chat_sessions` / `chat_messages`，放开 `type=guide`；默认复用最近 active guide，`new=true` 显式新建，不写问候消息；guide escalate 返回 400；support 行为不变。
+  - 槽位：`GuideQuery`（intent / semantic / category_path / filters / price / size_profile）；本地规则与 DashScope 解析共用；`merge_guide_query` 多轮合并，切换品类/重置词清空旧条件，档案身高体重兜底，“不限预算”清空价格。
+  - 检索：`resolve_category_ids`（一级含子类、叶子自身）；结构化条件（on_sale / 品类 / 价格 / 颜色 / 材质 ILIKE / 厚薄）+ `products.embedding` 余弦 top30 → RRF(k=60) → LLM 重排 top8；无结果按厚薄→材质→价格放宽，颜色与品类不放宽；仍无结果澄清一次，第二次固定话术。
+  - SSE：`meta → token* → products → done`；meta 含 intent/query/need_clarify/relaxed/quick_replies/degraded；错误事件插在 meta 后；AI 消息持久化 `meta.products/query/relaxed`，历史可从消息恢复商品卡。
+  - 尺码：新增 `GET /api/products/{id}/size-recommendation`；精确命中→中心归一化距离最小（并列取较大码）、无命中→最近行 + 建议试穿、缺身高体重/鞋款缺脚长不推荐（鞋款可用常穿尺码兜底）；导购卡与详情卡展示 `recommended_size/size_reason`，未改 M1 DTO。
+  - 商品向量：新增 `seed_product_embeddings.py`，默认只补 NULL、`--reembed` 全量、无 key 时保持 NULL；开发库已用 `text-embedding-v3` 写入 300/300。
+  - 前端：首页改为导购聊天（问候 + 档案提示 + 3 条示例 + 4 个品类入口 + 8 个热门商品；消息流 + AI 气泡 + 6~8 张商品卡 + 流式 + 快捷回复 + 新对话；不含图片/语音）；商品详情新增尺码推荐卡；Me 页入口改为“AI 找货”。
+- 改动文件 / 目录：
+  - `backend/app/ai/{base,guide_slots,guide_local,fake,dashscope,deps}.py`、`app/ai/prompts/guide_*.py`
+  - `backend/app/modules/guide/`、`app/modules/support/{schemas,service,router}.py`、`app/main.py`
+  - `backend/scripts/seed_product_embeddings.py`
+  - `backend/tests/{conftest,test_guide_slots,test_guide_size,test_guide_search,test_guide_api,test_product_embeddings,test_support_api}.py`
+  - `frontend/src/types/guide.ts`、`api/guide.ts`、`components/guide/`、`views/user/{HomeView,ProductDetailView,MeView}.vue`
+  - `frontend/tests/e2e/{guide,catalog,commerce}.spec.ts`
+  - `README.md`、`docs/superpowers/plans/2026-11-14-m4-guide-agent.md`
+- DB 迁移：无（`products.embedding` 列已存在）
+- 新增环境变量：无
+- 测试与验收：
+  - 命令：`cd backend && ./.venv/Scripts/python.exe -m pytest -q`；`cd frontend && npm run build`；`cd frontend && npm run test:e2e`
+  - 结果：后端 `193 passed`（145.35s；原 155 + 新增 38）；前端构建成功；E2E `8 passed`（43.3s；原 6 条不回归 + 新增导购 2 条）。
+  - 真实模型手工（qwen-plus + text-embedding-v3）：
+    - “推荐几件衬衫” → 8 张卡、全部推荐 L；“通勤双肩包” → 8 张；“跑步运动鞋” → 8 张。
+    - “找一件200元以内的蓝色薄衬衫，身高172体重75” → 1 张蓝色亚麻衬衫（L）；再问“要150元以内的” → 颜色/厚薄保留，价格覆盖为 150。
+    - “紫色真丝加厚衬衫10元以内” → `relaxed=["厚薄","材质","价格"]`，首次 `need_clarify=true`。
+- 遗留问题：
+  - [备注] 商品卡数量受候选池限制；候选 >=8 时为 8 张，精确过滤后可能少于 6 张。
+  - [后续] 导购会话历史抽屉未做，仅“复用最近 active + 新对话”；历史消息可通过会话接口读取。
+  - [后续] 图片/语音、AI 加购与 `chat_actions` 留 M5；转人工队列/工作台留 M6。
+  - [后续] 切换 embedding 模型需手动重跑 `seed_product_embeddings --reembed`。
+- 下一模块依赖：M5 可复用 guide 会话/`slot_state`、商品卡与尺码接口，增加 image/voice content_type 与 `chat_actions` 两阶段加购；M6 复用 `support_tickets`。
+- commit：m4 tag（见 `git log`）
 
 ## 2026-11-14 · M3 后续：LangGraph 客服 Agent + 开放式问题
 

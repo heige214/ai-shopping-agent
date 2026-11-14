@@ -12,7 +12,8 @@ test('演示账号登录后看到双 Tab 空壳', async ({ page }) => {
   await expect(tabs).toHaveCount(2)
   await expect(page.getByRole('tab', { name: 'AI 找货' })).toBeVisible()
   await expect(page.getByRole('tab', { name: '我的' })).toBeVisible()
-  await expect(page.getByText('你好，小鹿')).toBeVisible()
+  // demo 可能已有历史导购会话，首页不一定显示空状态问候
+  await expect(page.locator('.guide-input')).toBeVisible()
 
   await page.getByRole('tab', { name: '我的' }).click()
   await expect(page).toHaveURL('/me')

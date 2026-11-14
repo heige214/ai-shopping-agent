@@ -51,7 +51,7 @@ test('完整交易链路：加购 → 结算 → 下单 → 支付 → 客服发
   await page.getByPlaceholder('密码').fill('demo123')
   await page.getByRole('button', { name: '登录', exact: true }).click()
   await expect(page).toHaveURL('/')
-  await expect(page.getByText('你好，小鹿')).toBeVisible()
+  await expect(page.locator('.guide-input')).toBeVisible()
 
   // 分类 → 商品详情 → 加购（M4 起首页分类入口改为发送查询，分类页直接访问）
   await page.goto('/category/1')

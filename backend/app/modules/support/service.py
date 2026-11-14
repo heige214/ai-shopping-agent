@@ -224,7 +224,7 @@ async def append_user_message(
     if data.content_type != "text":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="M3 暂只支持文字消息",
+            detail="当前仅支持文字消息",
         )
     text = str((data.content or {}).get("text") or "").strip()
     if not text:
