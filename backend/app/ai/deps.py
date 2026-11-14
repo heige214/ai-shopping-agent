@@ -2,14 +2,15 @@ from __future__ import annotations
 
 import logging
 
-from app.ai.base import EmbeddingClient, SupportLLM
+from app.ai.base import EmbeddingClient, GuideLLM, SupportLLM
 from app.ai.dashscope import DashScopeSupportLLM
 from app.ai.embeddings import (
     DashScopeEmbeddingClient,
     FakeEmbeddingClient,
     NoopEmbeddingClient,
 )
-from app.ai.fake import FakeSupportLLM
+from app.ai.fake import FakeGuideLLM, FakeSupportLLM
+from app.ai.guide_local import LocalGuideLLM
 from app.ai.local import LocalSupportLLM
 from app.core.config import settings
 
@@ -38,6 +39,22 @@ def get_support_llm() -> SupportLLM:
     if settings.ai_provider == "dashscope":
         logger.warning("AI_PROVIDER=dashscope 但未配置 DASHSCOPE_API_KEY，使用本地规则")
     return LocalSupportLLM()
+
+
+def get_guide_llm() -> GuideLLM:
+    """FastAPI 依赖：导购槽位/重排/总结；fake 用于测试与 E2E。"""
+    if settings.ai_provider == "fake":
+        return FakeGuideLLM()
+    if _dashscope_enabled():
+        return DashScopeSupportLLM(
+            api_key=settings.dashscope_api_key or "",
+            base_url=settings.dashscope_base_url,
+            chat_model=settings.chat_model,
+            timeout_seconds=settings.llm_timeout_seconds,
+        )
+    if settings.ai_provider == "dashscope":
+        logger.warning("AI_PROVIDER=dashscope 但未配置 DASHSCOPE_API_KEY，使用本地导购规则")
+    return LocalGuideLLM()
 
 
 def get_embedding_client() -> EmbeddingClient:
