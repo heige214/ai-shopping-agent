@@ -13,6 +13,15 @@ from app.modules.commerce.models import (  # noqa: F401
     Order,
     OrderItem,
 )
+from app.modules.knowledge.models import (  # noqa: F401
+    KnowledgeChunk,
+    KnowledgeDocument,
+)
+from app.modules.support.models import (  # noqa: F401
+    ChatMessage,
+    ChatSession,
+    SupportTicket,
+)
 
 __all__ = [
     "User",
@@ -24,4 +33,9 @@ __all__ = [
     "CartItem",
     "Order",
     "OrderItem",
+    "KnowledgeDocument",
+    "KnowledgeChunk",
+    "ChatSession",
+    "ChatMessage",
+    "SupportTicket",
 ]
