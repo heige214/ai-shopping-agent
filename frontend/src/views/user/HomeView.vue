@@ -42,6 +42,9 @@ const streaming = ref(false)
 const streamingText = ref('')
 const streamingProducts = ref<GuideProductCard[]>([])
 const quickReplies = ref<string[]>([])
+const showHistory = ref(false)
+const historySessions = ref<ChatSession[]>([])
+const historyLoading = ref(false)
 
 const examples = ['推荐几件衬衫', '通勤双肩包', '跑步运动鞋']
 
@@ -64,6 +67,9 @@ const profileSummary = computed(() => {
 const showEmptyState = computed(
   () => messages.value.length === 0 && !streaming.value,
 )
+const sessionActive = computed(
+  () => !session.value || session.value.status === 'active',
+)
 
 function messageText(message: ChatMessage): string {
   return typeof message.content.text === 'string' ? message.content.text : ''
@@ -82,6 +88,67 @@ function friendlyError(error: unknown): string {
     return error.message
   }
   return '操作失败，请稍后重试'
+}
+
+function formatSessionTime(value: string): string {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return ''
+  }
+  const now = new Date()
+  if (date.toDateString() === now.toDateString()) {
+    return date.toLocaleTimeString('zh-CN', {
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  }
+  return date.toLocaleDateString('zh-CN', {
+    month: '2-digit',
+    day: '2-digit',
+  })
+}
+
+async function openHistory(): Promise<void> {
+  showHistory.value = true
+  historyLoading.value = true
+  try {
+    historySessions.value = await fetchGuideSessions()
+  } catch (error) {
+    historySessions.value = []
+    showToast(friendlyError(error))
+  } finally {
+    historyLoading.value = false
+  }
+}
+
+async function switchSession(target: ChatSession): Promise<void> {
+  if (sending.value) {
+    return
+  }
+  showHistory.value = false
+  if (session.value?.id === target.id) {
+    return
+  }
+  session.value = target
+  messages.value = []
+  quickReplies.value = []
+  streamingText.value = ''
+  streamingProducts.value = []
+  try {
+    const page = await fetchGuideMessages(target.id, 50)
+    messages.value = page.items
+    scrollToBottom()
+  } catch (error) {
+    showToast(friendlyError(error))
+  }
+}
+
+async function startNewFromHistory(): Promise<void> {
+  if (sending.value) {
+    return
+  }
+  showHistory.value = false
+  await newConversation()
 }
 
 function scrollToBottom(): void {
@@ -143,6 +210,10 @@ async function send(text: string): Promise<void> {
     chatSession = await ensureSession()
   } catch (error) {
     showToast(friendlyError(error))
+    return
+  }
+  if (chatSession.status !== 'active') {
+    showToast('该会话已结束，请点「新对话」继续')
     return
   }
 
@@ -276,6 +347,14 @@ onMounted(() => {
       <div class="header-actions">
         <button
           type="button"
+          class="history-button"
+          @click="openHistory"
+        >
+          <van-icon name="orders-o" size="13" />
+          历史
+        </button>
+        <button
+          type="button"
           class="new-chat-button"
           :disabled="sending"
           @click="newConversation"
@@ -370,19 +449,95 @@ onMounted(() => {
       <input
         v-model="input"
         class="guide-input"
-        :disabled="sending"
-        placeholder="说说你想找什么，例如：蓝色薄衬衫"
+        :disabled="sending || !sessionActive"
+        :placeholder="
+          sessionActive
+            ? '说说你想找什么，例如：蓝色薄衬衫'
+            : '会话已结束，点「新对话」继续'
+        "
         maxlength="500"
       />
       <button
         type="submit"
         class="send-button"
-        :disabled="!input.trim() || sending"
+        :disabled="!input.trim() || sending || !sessionActive"
         aria-label="发送"
       >
         <van-icon name="guide-o" size="20" />
       </button>
     </form>
+
+    <van-popup
+      v-model:show="showHistory"
+      position="left"
+      :style="{ width: '84%', height: '100%' }"
+      class="history-popup"
+    >
+      <div class="history-head">
+        <div>
+          <h2>导购会话</h2>
+          <p>点选历史对话继续聊</p>
+        </div>
+        <button
+          type="button"
+          class="history-close"
+          aria-label="关闭"
+          @click="showHistory = false"
+        >
+          <van-icon name="cross" />
+        </button>
+      </div>
+
+      <button
+        type="button"
+        class="history-new"
+        aria-label="开始新对话"
+        :disabled="sending"
+        @click="startNewFromHistory"
+      >
+        <van-icon name="plus" size="13" />
+        新对话
+      </button>
+
+      <div v-if="historyLoading" class="history-state">
+        <van-loading size="18">加载中...</van-loading>
+      </div>
+      <van-empty
+        v-else-if="!historySessions.length"
+        description="还没有导购会话"
+      />
+      <div v-else class="history-list">
+        <button
+          v-for="item in historySessions"
+          :key="item.id"
+          type="button"
+          class="history-item"
+          :class="{ active: item.id === session?.id }"
+          @click="switchSession(item)"
+        >
+          <div class="history-item-main">
+            <div class="history-item-title">
+              {{ item.title || '新导购会话' }}
+            </div>
+            <div class="history-item-meta">
+              <span>{{ formatSessionTime(item.updated_at) }}</span>
+              <span
+                class="history-status"
+                :class="{ active: item.status === 'active' }"
+              >
+                {{ item.status === 'active' ? '进行中' : '已结束' }}
+              </span>
+            </div>
+          </div>
+          <van-icon
+            v-if="item.id === session?.id"
+            name="success"
+            color="#FF5A1F"
+            size="16"
+          />
+        </button>
+      </div>
+    </van-popup>
   </div>
 </template>
 
@@ -456,6 +611,142 @@ onMounted(() => {
 
 .new-chat-button:disabled {
   opacity: 0.5;
+}
+
+.history-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  border: 1px solid var(--color-border);
+  background: var(--color-card);
+  color: var(--color-text-secondary);
+  border-radius: 999px;
+  padding: 6px 9px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.history-popup {
+  display: flex;
+  flex-direction: column;
+  padding: 18px 14px calc(18px + env(safe-area-inset-bottom));
+  overflow-y: auto;
+}
+
+.history-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.history-head h2 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.history-head p {
+  margin: 4px 0 0;
+  font-size: 10.5px;
+  color: var(--color-text-secondary);
+}
+
+.history-close {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 50%;
+  background: var(--color-field-bg);
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.history-new {
+  margin-top: 14px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 9px;
+  border: 1px dashed var(--color-primary-border);
+  border-radius: 10px;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.history-new:disabled {
+  opacity: 0.5;
+}
+
+.history-state {
+  padding: 40px 0;
+  display: flex;
+  justify-content: center;
+}
+
+.history-list {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.history-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  border: 1px solid var(--color-border);
+  background: var(--color-card);
+  border-radius: 12px;
+  padding: 10px 11px;
+  color: inherit;
+}
+
+.history-item.active {
+  border-color: var(--color-primary-border);
+  background: var(--color-primary-soft);
+}
+
+.history-item-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.history-item-title {
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.history-item-meta {
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 9.5px;
+  color: var(--color-text-secondary);
+}
+
+.history-status {
+  border-radius: 5px;
+  padding: 1px 4px;
+  background: var(--color-field-bg);
+}
+
+.history-status.active {
+  color: var(--color-primary);
+  background: #fff;
+  border: 1px solid var(--color-primary-border);
 }
 
 .home-main {

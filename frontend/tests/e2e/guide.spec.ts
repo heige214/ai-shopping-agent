@@ -27,7 +27,7 @@ async function login(
   await expect(page).toHaveURL('/')
 }
 
-test('AI 导购：空状态 → 示例问法 → 商品卡 → 多轮条件 → 新对话', async ({
+test('AI 导购：空状态 → 示例问法 → 商品卡 → 多轮条件 → 历史抽屉 → 新对话', async ({
   page,
 }) => {
   await login(page)
@@ -62,7 +62,46 @@ test('AI 导购：空状态 → 示例问法 → 商品卡 → 多轮条件 → 
   await expect(page.locator('.guide-product-card').last()).toContainText('蓝色')
   await expect(page.locator('.ai-bubble').last()).toContainText('蓝色')
 
-  // 新对话显式创建，回到空状态
+  // 历史抽屉：当前会话显示标题并高亮
+  await page.getByRole('button', { name: '历史' }).click()
+  const drawer = page.locator('.history-popup')
+  await expect(drawer).toBeVisible()
+  await expect(drawer.locator('.history-item')).toHaveCount(1)
+  await expect(drawer.locator('.history-item').first()).toContainText(
+    '推荐几件衬衫',
+  )
+  await expect(drawer.locator('.history-item').first()).toHaveClass(/active/)
+  await drawer.locator('.history-close').click()
+  await expect(drawer).toBeHidden()
+
+  // 新对话显式创建，再开一个会话
+  await page.getByRole('button', { name: '新对话' }).click()
+  await expect(page.locator('.guide-example-chip').first()).toBeVisible()
+  await page.getByRole('button', { name: '通勤双肩包' }).click()
+  await expect(page.locator('.user-bubble').last()).toHaveText('通勤双肩包')
+  await expect(page.locator('.guide-product-card')).toHaveCount(8)
+
+  // 历史抽屉列出两个会话，最新会话在前
+  await page.getByRole('button', { name: '历史' }).click()
+  await expect(drawer).toBeVisible()
+  await expect(drawer.locator('.history-item')).toHaveCount(2)
+  await expect(drawer.locator('.history-item').first()).toContainText(
+    '通勤双肩包',
+  )
+  await expect(drawer.locator('.history-item').first()).toHaveClass(/active/)
+
+  // 切回旧会话：消息与商品卡恢复
+  await drawer
+    .locator('.history-item')
+    .filter({ hasText: '推荐几件衬衫' })
+    .click()
+  await expect(drawer).toBeHidden()
+  await expect(page.locator('.user-bubble')).toHaveCount(2)
+  await expect(page.locator('.user-bubble').first()).toHaveText('推荐几件衬衫')
+  await expect(page.locator('.user-bubble').last()).toHaveText('要蓝色的')
+  await expect(page.locator('.guide-product-card')).toHaveCount(9)
+
+  // 再开新对话，回到空状态
   await page.getByRole('button', { name: '新对话' }).click()
   await expect(page.locator('.guide-example-chip').first()).toBeVisible()
   await expect(page.locator('.user-bubble')).toHaveCount(0)

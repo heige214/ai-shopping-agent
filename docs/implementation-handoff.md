@@ -17,6 +17,7 @@
 - M3 补充（2026-11-14，分支 `fix/support-size-availability`）：新增尺码库存“商品事实前置层”，`有XS的吗` 这类不带“尺码/码”的问题会先查商品库存与尺码表，再决定是否检索知识库；引用 chip 可点击，尺码引用用表格展示；`seed_knowledge.py` 支持 `--reembed` 在切换真实 embedding 模型后重建向量。真实百炼 Key 已配置，1813 条知识向量已用 `text-embedding-v3` 全量重建，后端当前使用 `qwen-plus`。
 - M3 Agent（2026-11-14，同分支）：客服主链路改为 LangGraph 受控工作流 `plan → tools`，由规划模型选择 `product_facts` / `search_knowledge` / `size_stock` 工具，再流式回答；移除独立意图和可回答性模型调用，开放问题（如“这个小孩子能带吗”）不再被固定意图菜单反问。引用按问题主题收窄。M4 可直接复用 `run_support_agent` 与 `SupportPlan`。
 - M4 导购（2026-11-14，分支 `m4-guide-agent`，tag `m4`）：首页改为导购聊天；`type=guide` 默认复用最近 active 会话，`new=true` 显式新建，不写问候，escalate 返回 400；槽位多轮合并；结构化过滤 + 商品向量 top30 → RRF → LLM 重排 6~8 张卡；无结果按厚薄→材质→价格放宽并澄清一次；新增 `GET /api/products/{id}/size-recommendation`；商品向量已用 `text-embedding-v3` 补齐 300/300。后端 193 pytest、前端 build、8 条 E2E 通过。
+- M4.1 历史抽屉（2026-11-14，分支 `m4.1-guide-history`，tag `m4.1`）：首页顶部「历史」抽屉列出 guide 会话（标题/时间/进行中或已结束），点击切换并恢复消息与商品卡；抽屉内可显式新建会话；已结束会话输入禁用。前端 build 与 8 条 E2E 通过。
 - 本地开发端口：后端 8100（本机 Windows 保留 7997–8096，8000 不可用），前端 Vite 5175（避开本机其他项目常占用的 5173/5174），`/api` 代理指向 8100。
 - 本地运行：以 `README.md` 的「本地启动」为准（Docker DB 5433、后端 8100、前端 5175、demo/demo123；客服 agent/agent123；商品与知识种子分别用 `seed_catalog` / `seed_knowledge` 导入）。
 
@@ -93,7 +94,7 @@ M4 已完成，交接要点：
 - 检索：`app/modules/guide/search.py` 负责品类子树、属性/价格过滤、商品向量 top30、RRF 与放宽；放宽顺序厚薄→材质→价格，颜色/品类不放宽。
 - 尺码：`app/modules/guide/size.py` 与 `GET /api/products/{id}/size-recommendation`；商品详情与导购卡都展示 `recommended_size/size_reason`。
 - 商品向量：`scripts/seed_product_embeddings.py`；切换 embedding 模型后必须 `--reembed`。开发库当前 300 条已有 `text-embedding-v3` 向量。
-- 前端：首页 `HomeView.vue` 是导购聊天，空状态组件 `components/guide/GuideEmptyState.vue`，商品卡 `GuideProductCard.vue`；E2E `guide.spec.ts` 覆盖聊天与尺码卡。M4 起首页品类入口是“发送查询”按钮，`catalog.spec.ts` / `commerce.spec.ts` 已改为直达 `/category/1`，新窗口不要改回链接假设。
+- 前端：首页 `HomeView.vue` 是导购聊天，空状态组件 `components/guide/GuideEmptyState.vue`，商品卡 `GuideProductCard.vue`，顶部「历史」抽屉支持查看/切换 guide 会话；E2E `guide.spec.ts` 覆盖聊天、历史切换与尺码卡。M4 起首页品类入口是“发送查询”按钮，`catalog.spec.ts` / `commerce.spec.ts` 已改为直达 `/category/1`，新窗口不要改回链接假设。
 - 不要改 M0 认证契约、M1 商品 DTO、M2 交易契约、M3 商品客服契约与 M4 导购 SSE 顺序。
 
 然后进入 M5「图片理解、语音转写、AI 加购」：
